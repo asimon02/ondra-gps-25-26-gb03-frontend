@@ -1,0 +1,41 @@
+# Angular
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.sublime-workspace
+
+# System
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+environment.*.ts
+!environment.ts
+!environment.prod.ts
+
+# Logs
+*.log
+logs/
+
+# Testing
+/coverage
+/.nyc_output
+
+# Angular cache
+.angular/
