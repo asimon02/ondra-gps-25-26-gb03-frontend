@@ -46,3 +46,13 @@ html {
 .cdk-overlay-pane {
   z-index: 9999 !important;
 }
+
+// Backdrop oscuro del overlay
+.cdk-overlay-dark-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+// Asegurar que el overlay tenga el z-index correcto
+.cdk-overlay-container {
+  z-index: 9999;
+}

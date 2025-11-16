@@ -25,18 +25,26 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         @for (artista of artistas; track artista.idArtista) {
           <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-            <!-- Foto del artista -->
-            <div class="w-full aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden relative">
+
+            <!-- ✅ Foto del artista - CLICKEABLE -->
+            <div
+              (click)="navegarAPerfilArtista(artista)"
+              class="w-full aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden relative cursor-pointer group">
               <img
                 [src]="getFotoArtista(artista)"
                 [alt]="artista.nombreArtistico"
-                class="w-full h-full object-cover cursor-pointer transform transition-transform duration-300 hover:scale-105"
+                class="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-105"
               />
             </div>
 
             <!-- Información del artista -->
             <div class="p-6">
-              <h3 class="text-xl font-semibold text-gray-800">{{ artista.nombreArtistico }}</h3>
+              <!-- ✅ Nombre también clickeable -->
+              <h3
+                (click)="navegarAPerfilArtista(artista)"
+                class="text-xl font-semibold text-gray-800 cursor-pointer hover:text-primary transition-colors">
+                {{ artista.nombreArtistico }}
+              </h3>
 
               <!-- Biografía completa -->
               @if (artista.biografiaArtistico) {
@@ -51,8 +59,8 @@
 
               <!-- Botón de acción -->
               <button
-                [routerLink]="['/artista', artista.idArtista]"
-                class="mt-5 w-full bg-blue-600 text-white cursor-pointer py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                (click)="navegarAPerfilArtista(artista)"
+                class="mt-5 w-full bg-blue-600 text-white cursor-pointer py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium">
                 Escuchar
               </button>
             </div>

@@ -1,0 +1,243 @@
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <button
+        (click)="volverAPerfil()"
+        class="group flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-200 mb-6">
+        <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 group-hover:border-primary flex items-center justify-center transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </div>
+        <span class="font-medium">Volver</span>
+      </button>
+
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg">
+              @if (isArtista()) {
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              } @else {
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+              }
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">
+              @if (isArtista()) {
+                Gestión de Cobros
+              } @else {
+                Gestión de Pagos
+              }
+            </h1>
+          </div>
+          <p class="text-gray-600 ml-15">
+            @if (isArtista()) {
+              Administra tus métodos de cobro para recibir pagos por tus contenidos
+            } @else {
+              Administra tus métodos de pago para comprar contenidos
+            }
+          </p>
+        </div>
+
+        <button
+          (click)="abrirModal()"
+          class="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Añadir Método
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    @if (errorMessage()) {
+      <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-red-800 mb-1">Error</p>
+            <p class="text-sm text-red-700">{{ errorMessage() }}</p>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="text-center py-16">
+        <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-100 border-t-primary"></div>
+        <p class="text-gray-600 mt-4 font-medium">Cargando métodos...</p>
+      </div>
+    } @else {
+
+      <!-- Lista de Métodos -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+
+      <!-- Header de la sección -->
+      <div class="px-6 py-5 bg-blue-900 border-b border-blue-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+            @if (isArtista()) {
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            } @else {
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+              </svg>
+            }
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white">
+              @if (isArtista()) {
+                Mis Métodos de Cobro
+              } @else {
+                Mis Métodos de Pago
+              }
+            </h2>
+            <p class="text-sm text-white/80 mt-0.5">
+              {{ metodosPago().length }} método{{ metodosPago().length !== 1 ? 's' : '' }} registrado{{ metodosPago().length !== 1 ? 's' : '' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+        <!-- Contenido -->
+        <div class="p-6 border border-blue-900 rounded-b-xl">
+          @if (metodosPago().length === 0) {
+            <!-- Estado vacío -->
+            <div class="text-center py-16">
+              <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
+                @if (isArtista()) {
+                  <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  </svg>
+                } @else {
+                  <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                  </svg>
+                }
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 mb-2">
+                @if (isArtista()) {
+                  No tienes métodos de cobro registrados
+                } @else {
+                  No tienes métodos de pago registrados
+                }
+              </h3>
+              <button
+                (click)="abrirModal()"
+                class="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Añadir Primer Método
+              </button>
+            </div>
+          } @else {
+            <!-- Grid de métodos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              @for (metodo of metodosPago(); track $index) {
+                <div class="group relative border border-blue-900 hover:border-primary rounded-xl p-6 transition-all duration-300 bg-white overflow-hidden">
+
+                  <!-- Header de la tarjeta -->
+                  <div class="relative flex items-start justify-between mb-5">
+                    <div class="flex items-center gap-3 flex-1">
+                      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <app-payment-icon [type]="getTipo(metodo)" size="lg" class="text-white"></app-payment-icon>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="font-bold text-gray-900 capitalize text-lg truncate">
+                          {{ getTipo(metodo) }}
+                        </p>
+                        <p class="text-sm text-gray-500 truncate font-medium">
+                          {{ getPropietario(metodo) }}
+                        </p>
+                      </div>
+                    </div>
+                    <div class="w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50"></div>
+                  </div>
+
+                  <!-- Información detallada -->
+                  <div class="relative space-y-4 mb-5">
+                    <!-- Dirección -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                      <div class="flex items-start gap-2 mb-2">
+                        <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <p class="font-semibold text-gray-700 text-sm">Dirección</p>
+                      </div>
+                      <p class="text-xs text-gray-600 leading-relaxed ml-6">{{ getDireccion(metodo) }}</p>
+                    </div>
+
+                    <!-- Detalles específicos del método -->
+                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <div class="flex items-start gap-2 mb-2">
+                        <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="font-semibold text-gray-700 text-sm">
+                          {{ getTituloDetalle(getTipo(metodo)) }}
+                        </p>
+                      </div>
+                      <p class="text-sm font-mono bg-white px-3 py-2 rounded border border-blue-200 ml-6 text-gray-800 font-semibold">
+                        {{ getDetalle(metodo) }}
+                      </p>
+                    </div>
+
+                    <!-- Fechas -->
+                    @if (metodo.fechaCreacion) {
+                      <div class="flex items-center gap-2 text-xs text-gray-400 pt-2">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Creado: {{ metodo.fechaCreacion }}
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Acciones -->
+                  <div class="relative pt-4 border-t border-gray-100">
+                    <button
+                      type="button"
+                      (click)="eliminarMetodo(metodo)"
+                      class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-sm">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    }
+
+    <!-- Modal -->
+    @if (mostrarModal()) {
+      <app-add-payment-method-modal
+        [isArtista]="isArtista()"xq
+        (closeModal)="cerrarModal()"
+        (metodoCreado)="onMetodoCreado()">
+      </app-add-payment-method-modal>
+    }
+
+  </div>
+</div>
