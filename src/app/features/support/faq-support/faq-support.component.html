@@ -1,0 +1,116 @@
+<section class="min-h-screen bg-white py-12 relative">
+  <div class="px-4">
+    <button
+      class="absolute top-4 left-4 flex items-center text-gray-600 hover:text-gray-800 transition-colors text-sm font-medium z-10"
+      (click)="volverAtras()"
+    >
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Volver atrás
+    </button>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-4">
+    <!-- Título -->
+    <h1 class="text-4xl md:text-5xl font-extrabold mb-2 text-center text-blue-800">
+      Centro de Ayuda
+    </h1>
+
+    <div class="flex justify-center mb-8">
+      <p class="text-gray-700 leading-relaxed text-center max-w-3xl">
+        Bienvenido al Centro de Ayuda de Ondra. Aquí encontrarás respuestas a las dudas más comunes sobre el uso de la plataforma, ya seas usuario o artista.
+      </p>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="mb-8">
+      <div class="relative max-w-2xl mx-auto">
+        <input
+          type="text"
+          [(ngModel)]="searchText"
+          placeholder="Buscar pregunta..."
+          class="w-full px-5 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <svg
+          class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Categorías -->
+    <div class="mb-8">
+      <div class="flex flex-wrap justify-center gap-2">
+        <button
+          *ngFor="let categoria of categorias"
+          (click)="seleccionarCategoria(categoria)"
+          [class]="categoriaSeleccionada === categoria
+            ? 'px-4 py-2 rounded-full text-sm font-medium transition-colors bg-blue-600 text-white'
+            : 'px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200'"
+        >
+          {{ categoria }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Acordeones de preguntas -->
+    <div class="max-w-4xl mx-auto space-y-3">
+      <div
+        *ngFor="let faq of faqsFiltradas"
+        class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+      >
+        <button
+          (click)="toggleFAQ(faq)"
+          class="w-full px-6 py-4 text-left flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
+        >
+          <span class="font-semibold text-gray-900 pr-4">{{ faq.pregunta }}</span>
+          <svg
+            class="w-5 h-5 text-gray-500 transform transition-transform flex-shrink-0"
+            [class.rotate-180]="faq.abierta"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div
+          *ngIf="faq.abierta"
+          class="px-6 py-4 bg-gray-50 border-t border-gray-200"
+        >
+          <p class="text-gray-700 leading-relaxed">{{ faq.respuesta }}</p>
+          <span class="inline-block mt-3 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+            {{ faq.categoria }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Mensaje cuando no hay resultados -->
+      <div *ngIf="faqsFiltradas.length === 0" class="text-center py-12">
+        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="text-gray-500 text-lg mb-2">No se encontraron preguntas</p>
+        <p class="text-gray-400 text-sm">Intenta con otros términos de búsqueda o selecciona otra categoría</p>
+      </div>
+    </div>
+
+    <!-- Mensaje final de soporte -->
+    <div class="mt-12 max-w-4xl mx-auto bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+      <p class="text-gray-700 leading-relaxed mb-3">
+        Si tu duda no aparece aquí o necesitas ayuda personalizada, puedes escribirnos en cualquier momento a:
+      </p>
+      <a href="mailto:soporte@ondra.app" class="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+        📧 soporte&#64;ondra.app
+      </a>
+      <p class="text-gray-600 text-sm mt-3">Estamos aquí para ayudarte.</p>
+    </div>
+  </div>
+</section>

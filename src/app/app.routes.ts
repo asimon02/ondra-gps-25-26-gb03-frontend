@@ -45,6 +45,22 @@ export const routes: Routes = [
     loadComponent: () => import('./features/public-profile/public-profile.component').then(m => m.PublicProfileComponent)
   },
   {
+    path: 'privacy-policy',
+    loadComponent: () => import('./features/legal/privacy-policy/privacy-policy.component').then(m => m.PrivacyPolicyComponent)
+  },
+  {
+    path: 'cookies-policy',
+    loadComponent: () => import('./features/legal/cookies-policy/cookies-policy.component').then(m => m.CookiesPolicyComponent)
+  },
+  {
+    path: 'terms-of-service',
+    loadComponent: () => import('./features/legal/terms-of-service/terms-of-service.component').then(m => m.TermsOfServiceComponent)
+  },
+  {
+    path: 'faq-support',
+    loadComponent: () => import('./features/support/faq-support/faq-support.component').then(m => m.FaqSupportComponent)
+  },
+  {
     path: '**',
     redirectTo: ''
   }
