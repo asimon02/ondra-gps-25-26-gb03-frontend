@@ -129,7 +129,7 @@ export class AuthStateService {
       apellidos: user.apellidosUsuario,
       tipoUsuario: user.tipoUsuario,
       fotoPerfil: user.fotoPerfil ?? undefined,
-      idArtista: user.idArtista ?? undefined // ✅ AÑADIR
+      idArtista: user.idArtista ?? undefined
     };
   }
 

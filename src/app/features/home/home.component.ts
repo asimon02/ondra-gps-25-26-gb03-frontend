@@ -20,7 +20,8 @@ export class HomeComponent implements OnInit {
   artistas = signal<ArtistaDTO[]>([]);
   stats = signal<StatsGlobales | null>(null);
   isLoading = signal(true);
-  error = signal<string | null>(null);
+  errorStats = signal<string | null>(null);
+  errorArtistas = signal<string | null>(null);
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -36,7 +37,7 @@ export class HomeComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar estadísticas:', err);
-        this.error.set('No se pudieron cargar las estadísticas');
+        this.errorStats.set('No se pudieron cargar las estadísticas');
       }
     });
 
@@ -48,9 +49,9 @@ export class HomeComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar artistas:', err);
-        this.error.set('No se pudieron cargar los artistas');
+        this.errorArtistas.set('No se pudieron cargar los artistas');
         this.isLoading.set(false);
-      }
-    });
-  }
+      }
+    });
+  }
 }

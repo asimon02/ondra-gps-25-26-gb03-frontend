@@ -79,7 +79,9 @@ export class LeaveArtistModalComponent {
 
           // Redirigir al perfil actualizado
           setTimeout(() => {
-            this.router.navigate(['/perfil/info']);
+            this.router.navigate(['/perfil/info']).then(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
           }, 500);
         },
         error: (error) => {

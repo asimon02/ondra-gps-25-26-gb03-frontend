@@ -4,9 +4,13 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router } from '@angular/router';
 import { SongService } from '../services/song.service';
 import { FileUploadService } from '../../shared/services/file-upload.service';
-import { GenreService, GeneroOption } from '../../shared/services/genre.service';
-import { AuthStateService } from '../../../core/services/auth-state.service';
+import { GenreService } from '../../shared/services/genre.service';
 import { Location } from '@angular/common';
+
+interface GeneroDTO {
+  idGenero: number;
+  nombreGenero: string;
+}
 
 @Component({
   selector: 'app-upload-song',
@@ -20,12 +24,11 @@ export class UploadSongComponent implements OnInit {
   private songService = inject(SongService);
   private fileUploadService = inject(FileUploadService);
   private genreService = inject(GenreService);
-  private authState = inject(AuthStateService);
   public router = inject(Router);
   private location = inject(Location);
 
   songForm!: FormGroup;
-  generos = signal<GeneroOption[]>([]);
+  generos = signal<GeneroDTO[]>([]);
 
   // Estados de subida
   isSubmitting = signal(false);
@@ -51,10 +54,19 @@ export class UploadSongComponent implements OnInit {
     this.initializeForm();
   }
 
+  /**
+   * Carga los géneros desde el backend
+   */
   private cargarGeneros(): void {
-    this.genreService.obtenerGenerosComoOpciones().subscribe({
-      next: (generos) => this.generos.set(generos),
-      error: (err) => console.error('Error al cargar géneros:', err)
+    this.genreService.obtenerTodosLosGeneros().subscribe({
+      next: (generos) => {
+        this.generos.set(generos);
+        console.log('✅ Géneros cargados:', generos);
+      },
+      error: (err) => {
+        console.error('❌ Error al cargar géneros:', err);
+        this.errorMessage.set('Error al cargar los géneros musicales');
+      }
     });
   }
 
@@ -63,7 +75,8 @@ export class UploadSongComponent implements OnInit {
       tituloCancion: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(100)]],
       idGenero: ['', [Validators.required]],
       fechaLanzamiento: ['', [Validators.required]],
-      precioCancion: [1.99, [Validators.required, Validators.min(0.99), Validators.max(99.99)]]
+      precioCancion: [0.99, [Validators.required, Validators.min(0.99), Validators.max(99.99)]],
+      descripcion: ['', [Validators.maxLength(500)]]
     });
   }
 
@@ -74,16 +87,9 @@ export class UploadSongComponent implements OnInit {
     if (!file) return;
 
     // Validar tipo de archivo
-    if (!file.type.startsWith('audio/')) {
-      this.errorMessage.set('Por favor selecciona un archivo de audio válido');
-      this.scrollToTop();
-      return;
-    }
-
-    // Validar tamaño (máximo 50MB)
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    if (file.size > maxSize) {
-      this.errorMessage.set('El archivo de audio no puede superar los 50MB');
+    const validacion = this.fileUploadService.validarAudio(file);
+    if (!validacion.valido) {
+      this.errorMessage.set(validacion.error || 'Archivo de audio no válido');
       this.scrollToTop();
       return;
     }
@@ -92,14 +98,11 @@ export class UploadSongComponent implements OnInit {
     this.errorMessage.set(null);
     this.audioFileName.set(file.name);
 
-    // Obtener duración del audio
-    this.obtenerDuracionAudio(file);
-
-    // Subir archivo
-    this.fileUploadService.subirAudio(file, 'cancion').subscribe({
+    // Subir archivo al backend
+    this.fileUploadService.subirAudioCancion(file).subscribe({
       next: (response) => {
-        this.audioUrl.set(response.url_audio);
-        this.audioDuration.set(response.duracion_segundos || 0);
+        this.audioUrl.set(response.url);
+        this.audioDuration.set(response.duracion || 0);
         this.uploadingAudio.set(false);
         console.log('✅ Audio subido:', response);
       },
@@ -113,10 +116,6 @@ export class UploadSongComponent implements OnInit {
     });
   }
 
-  goBack(): void {
-    this.location.back();
-  }
-
   onCoverSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -124,16 +123,9 @@ export class UploadSongComponent implements OnInit {
     if (!file) return;
 
     // Validar tipo de archivo
-    if (!file.type.startsWith('image/')) {
-      this.errorMessage.set('Por favor selecciona una imagen válida');
-      this.scrollToTop();
-      return;
-    }
-
-    // Validar tamaño (máximo 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      this.errorMessage.set('La imagen no puede superar los 5MB');
+    const validacion = this.fileUploadService.validarImagen(file);
+    if (!validacion.valido) {
+      this.errorMessage.set(validacion.error || 'Imagen no válida');
       this.scrollToTop();
       return;
     }
@@ -145,13 +137,13 @@ export class UploadSongComponent implements OnInit {
     };
     reader.readAsDataURL(file);
 
-    // Subir archivo
+    // Subir archivo al backend
     this.uploadingCover.set(true);
     this.errorMessage.set(null);
 
-    this.fileUploadService.subirImagen(file, 'cancion').subscribe({
+    this.fileUploadService.subirPortadaCancion(file).subscribe({
       next: (response) => {
-        this.coverUrl.set(response.url_imagen);
+        this.coverUrl.set(response.url); // ✅ Corregido
         this.uploadingCover.set(false);
         console.log('✅ Portada subida:', response);
       },
@@ -199,8 +191,11 @@ export class UploadSongComponent implements OnInit {
       urlAudio: this.audioUrl()!,
       urlPortada: this.coverUrl() || undefined,
       precioCancion: parseFloat(formValue.precioCancion),
-      idGenero: parseInt(formValue.idGenero)
+      idGenero: parseInt(formValue.idGenero),
+      descripcion: formValue.descripcion || undefined
     };
+
+    console.log('📤 Enviando canción:', dto);
 
     this.songService.crearCancion(dto).subscribe({
       next: (cancion) => {
@@ -211,8 +206,8 @@ export class UploadSongComponent implements OnInit {
 
         // Redirigir después de 2 segundos
         setTimeout(() => {
-          this.router.navigate(['/mis-canciones']);
-        }, 2000);
+          this.router.navigate(['/perfil/info']);
+        }, 3000);
       },
       error: (error) => {
         console.error('❌ Error al crear canción:', error);
@@ -234,9 +229,10 @@ export class UploadSongComponent implements OnInit {
     this.coverPreview.set(null);
   }
 
-  /**
-   * ✅ Hace scroll suave hacia arriba de la página
-   */
+  goBack(): void {
+    this.location.back();
+  }
+
   private scrollToTop(): void {
     window.scrollTo({
       top: 0,
@@ -256,6 +252,7 @@ export class UploadSongComponent implements OnInit {
   get idGenero() { return this.songForm.get('idGenero'); }
   get fechaLanzamiento() { return this.songForm.get('fechaLanzamiento'); }
   get precioCancion() { return this.songForm.get('precioCancion'); }
+  get descripcion() { return this.songForm.get('descripcion'); }
 
   isFieldInvalid(field: any): boolean {
     return !!(field && field.invalid && field.touched);

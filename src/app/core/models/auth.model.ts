@@ -17,6 +17,7 @@ export interface UsuarioDTO {
   fotoPerfil: string | null;
   activo: boolean;
   permiteGoogle: boolean;
+  onboardingCompletado: boolean;
   emailVerificado: boolean;
   slug?: string;
 

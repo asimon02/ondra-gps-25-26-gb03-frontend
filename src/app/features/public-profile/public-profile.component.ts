@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PublicProfileService } from '../user-profile/services/public-profile.service';
 import { UserSeguimientoService } from '../user-profile/services/user-seguimiento.service';
+import { SongService } from '../songs/services/song.service';
 import { UsuarioPublico } from '../user-profile/models/usuario-publico.model';
 import { EstadisticasSeguimiento, ModalType } from '../user-profile/models/seguimiento.model';
 import { AuthStateService } from '../../core/services/auth-state.service';
@@ -49,7 +50,8 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     public publicProfileService: PublicProfileService,
     public seguimientoService: UserSeguimientoService,
     public authStateService: AuthStateService,
-    private location: Location
+    private location: Location,
+    private songService: SongService
   ) {}
 
   ngOnInit(): void {
@@ -140,26 +142,22 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * ✅ Carga las reproducciones totales del artista desde el endpoint real
+   */
   cargarReproducciones(idArtista: number): void {
-    const artistaStats: { [key: number]: number } = {
-      1: 1247893,
-      2: 892345,
-      3: 3456789,
-      4: 567234,
-      5: 2345678,
-      6: 456789,
-      7: 9876543,
-      8: 234567,
-      9: 678901,
-      10: 1234567,
-      11: 345678,
-      12: 890123,
-      13: 456789,
-      14: 123456
-    };
+    console.log(`🎵 Consultando estadísticas del artista ${idArtista}...`);
 
-    this.totalReproducciones = artistaStats[idArtista] || Math.floor(Math.random() * (5000000 - 100000) + 100000);
-    console.log(`🎵 Total reproducciones para artista ${idArtista}: ${this.totalReproducciones}`);
+    this.songService.obtenerEstadisticasArtista(idArtista).subscribe({
+      next: (estadisticas) => {
+        this.totalReproducciones = estadisticas.totalReproducciones;
+        console.log(`✅ Total reproducciones cargadas: ${this.totalReproducciones}`);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar reproducciones:', error);
+        this.totalReproducciones = 0;
+      }
+    });
   }
 
   verificarSiEsPropioYSeguimiento(idUsuario: number): void {

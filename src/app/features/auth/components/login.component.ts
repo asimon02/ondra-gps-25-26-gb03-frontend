@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { RecomendacionesService } from '../../../core/services/recomendaciones.service';
-import { convertirGenerosAIds } from '../../../core/models/generos.model';
 import { AuthService } from '../../../core/services/auth.service';
-import { GENEROS_MUSICALES } from '../../../core/models/generos.model';
+import { ConfigService } from '../../../core/services/config.service';
+import { AuthStateService } from '../../../core/services/auth-state.service';
+import { GenreService, GeneroDTO } from '../../shared/services/genre.service';
 
 declare const google: any;
 
@@ -22,12 +23,18 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private recomendacionesService = inject(RecomendacionesService);
+  private genreService = inject(GenreService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private ngZone = inject(NgZone);
+  private configService = inject(ConfigService);
+  private authState = inject(AuthStateService);
 
-  readonly GOOGLE_CLIENT_ID = '41556010027-4d8rs7q4ueggb72ql3v96maf9hn16cph.apps.googleusercontent.com';
-  readonly GENEROS = GENEROS_MUSICALES;
+  GOOGLE_CLIENT_ID = signal<string | null>(null);
+
+  // ✅ NUEVO: Lista de géneros cargada desde el backend
+  generos = signal<GeneroDTO[]>([]);
+  generosLoading = signal<boolean>(true);
 
   // Estado del componente
   formMode = signal<FormMode>('login');
@@ -65,7 +72,8 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.initializeForms();
     this.checkVerificationToken();
-    this.initializeGoogleSignIn();
+    this.cargarConfiguracion(); // ✨ CAMBIO: No llamar directamente initializeGoogleSignIn
+    this.cargarGeneros();
   }
 
   ngAfterViewInit(): void {
@@ -78,6 +86,29 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearCountdown();
+  }
+
+  // ============================================
+  // ✅ NUEVO: CARGA DE GÉNEROS DESDE BACKEND
+  // ============================================
+
+  private cargarGeneros(): void {
+    console.log('📥 Cargando géneros desde el backend...');
+    this.generosLoading.set(true);
+
+    this.genreService.obtenerTodosLosGeneros().subscribe({
+      next: (generos) => {
+        this.generos.set(generos);
+        this.generosLoading.set(false);
+        console.log(`✅ ${generos.length} géneros cargados correctamente`);
+      },
+      error: (err) => {
+        console.error('❌ Error al cargar géneros:', err);
+        this.generos.set([]);
+        this.generosLoading.set(false);
+        // No mostramos error al usuario, solo registramos en consola
+      }
+    });
   }
 
   // ============================================
@@ -97,7 +128,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
       tipoUsuario: ['NORMAL', [Validators.required]],
-      generosPreferidos: [[]]
+      generosPreferidos: [[]] // ✅ Ahora almacenará IDs (números)
     }, { validators: this.passwordMatchValidator });
 
     this.forgotPasswordForm = this.fb.group({
@@ -129,13 +160,37 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   // GOOGLE SIGN-IN
   // ============================================
 
+  /**
+   * ✨ NUEVO: Carga la configuración desde el backend
+   */
+  private cargarConfiguracion(): void {
+    this.configService.obtenerConfigPublica().subscribe({
+      next: (config) => {
+        this.GOOGLE_CLIENT_ID.set(config.googleClientId);
+        console.log('✅ Configuración cargada desde backend');
+        this.initializeGoogleSignIn();
+      },
+      error: (err) => {
+        console.error('❌ Error al cargar configuración:', err);
+        // No inicializar Google Sign-In si falla
+      }
+    });
+  }
+
   private initializeGoogleSignIn(): void {
+    const clientId = this.GOOGLE_CLIENT_ID(); // ✨ Leer del signal
+
+    if (!clientId) {
+      console.warn('⚠️ No se pudo cargar Google Client ID');
+      return;
+    }
+
     const checkGoogle = setInterval(() => {
       if (typeof google !== 'undefined' && google.accounts) {
         clearInterval(checkGoogle);
 
         google.accounts.id.initialize({
-          client_id: this.GOOGLE_CLIENT_ID,
+          client_id: clientId, // ✨ Usar variable del signal
           callback: (response: any) => this.handleGoogleSignIn(response),
           auto_select: false,
           cancel_on_tap_outside: true
@@ -417,7 +472,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.clearMessages();
 
     const formValue = this.registerForm.value;
-    const generosSeleccionados: string[] = formValue.generosPreferidos || [];
 
     this.authService.registrar({
       emailUsuario: formValue.email,
@@ -428,26 +482,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     }).subscribe({
       next: (usuarioCreado) => {
         console.log('✅ Usuario registrado:', usuarioCreado);
-
-        if (generosSeleccionados.length > 0) {
-          const idsGeneros = convertirGenerosAIds(generosSeleccionados);
-
-          this.recomendacionesService.agregarPreferencias(
-            usuarioCreado.idUsuario,
-            idsGeneros
-          ).subscribe({
-            next: () => {
-              console.log('✅ Preferencias guardadas correctamente');
-              this.mostrarMensajeExito();
-            },
-            error: (err) => {
-              console.warn('⚠️ No se pudieron guardar las preferencias:', err);
-              this.mostrarMensajeExito();
-            }
-          });
-        } else {
-          this.mostrarMensajeExito();
-        }
+        this.mostrarMensajeExito();
       },
       error: (err) => {
         this.setError(err.message);
@@ -457,7 +492,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public mostrarMensajeExito(): void {
-    this.setSuccess('Registro completado. Revisa tu correo electrónico para verificar tu cuenta.');
+    this.setSuccess('Registro completado. Revisa tu correo para verificar tu cuenta.');
     this.registerForm.reset({ tipoUsuario: 'NORMAL', generosPreferidos: [] });
     setTimeout(() => this.changeFormMode('login'), 3000);
     this.isLoading.set(false);
@@ -478,23 +513,29 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ============================================
-  // GESTIÓN DE GÉNEROS (MULTISELECT)
+  // ✅ ACTUALIZADO: GESTIÓN DE GÉNEROS CON IDs
   // ============================================
 
-  toggleGenero(genero: string): void {
+  /**
+   * Alterna la selección de un género por su ID
+   */
+  toggleGenero(idGenero: number): void {
     const generosControl = this.registerForm.get('generosPreferidos');
-    const generosActuales = generosControl?.value || [];
+    const generosActuales: number[] = generosControl?.value || [];
 
-    if (generosActuales.includes(genero)) {
-      generosControl?.setValue(generosActuales.filter((g: string) => g !== genero));
+    if (generosActuales.includes(idGenero)) {
+      generosControl?.setValue(generosActuales.filter((id: number) => id !== idGenero));
     } else {
-      generosControl?.setValue([...generosActuales, genero]);
+      generosControl?.setValue([...generosActuales, idGenero]);
     }
   }
 
-  isGeneroSelected(genero: string): boolean {
-    const generos = this.registerForm.get('generosPreferidos')?.value || [];
-    return generos.includes(genero);
+  /**
+   * Verifica si un género está seleccionado por su ID
+   */
+  isGeneroSelected(idGenero: number): boolean {
+    const generos: number[] = this.registerForm.get('generosPreferidos')?.value || [];
+    return generos.includes(idGenero);
   }
 
   // ============================================
@@ -521,20 +562,27 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private navigateAfterLogin(tipoUsuario: string): void {
-    if (tipoUsuario === 'ARTISTA') {
-      this.router.navigate(['/dashboard-artista']);
-    } else {
-      this.router.navigate(['/']);
+    const usuario = this.authState.currentUser();
+
+    if (!usuario) {
+      this.router.navigate(['/login']);
+      return;
     }
+
+    // Verificar si completó onboarding
+    if (!usuario.onboardingCompletado) {
+      console.log('ℹ️ Usuario no ha completado onboarding, redirigiendo a configurar preferencias');
+      this.router.navigate(['/preferencias/configurar']);
+      return;
+    }
+
+    this.router.navigate(['/perfil-info']);
   }
 
   // ============================================
-  // ✅ MÉTODOS DE MENSAJES CON SCROLL AUTOMÁTICO
+  // MÉTODOS DE MENSAJES CON SCROLL AUTOMÁTICO
   // ============================================
 
-  /**
-   * Hace scroll suave hacia arriba de la página
-   */
   private scrollToTop(): void {
     window.scrollTo({
       top: 0,
@@ -542,25 +590,15 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /**
-   * Establece mensaje de éxito y hace scroll hacia arriba
-   */
   private setSuccess(message: string): void {
     this.successMessage.set(message);
     this.errorMessage.set(null);
-
-    // ✅ Hacer scroll después de un pequeño delay para que el DOM se actualice
     setTimeout(() => this.scrollToTop(), 100);
   }
 
-  /**
-   * Establece mensaje de error y hace scroll hacia arriba
-   */
   private setError(message: string): void {
     this.errorMessage.set(message);
     this.successMessage.set(null);
-
-    // ✅ Hacer scroll después de un pequeño delay para que el DOM se actualice
     setTimeout(() => this.scrollToTop(), 100);
   }
 

@@ -3,6 +3,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, noAuthGuard } from './core/guards/auth.guard';
 import { artistOnlyGuard } from './core/guards/artist-only.guard';
+import { ConfigurarPreferenciasComponent } from './features/auth/configurar-preferencias/configurar-preferencias.component';
 
 export const routes: Routes = [
   {
@@ -37,6 +38,11 @@ export const routes: Routes = [
     canActivate: [authGuard, artistOnlyGuard]
   },
   {
+    path: 'preferencias/configurar',
+    component: ConfigurarPreferenciasComponent,
+    canActivate: [authGuard]
+  },
+  {
     path: 'usuario/:slug',
     loadComponent: () => import('./features/public-profile/public-profile.component').then(m => m.PublicProfileComponent)
   },
@@ -57,7 +63,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/legal/terms-of-service/terms-of-service.component').then(m => m.TermsOfServiceComponent)
   },
   {
-    path: 'faq-support',
+    path: 'support',
     loadComponent: () => import('./features/support/faq-support/faq-support.component').then(m => m.FaqSupportComponent)
   },
   {

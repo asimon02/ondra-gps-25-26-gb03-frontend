@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { AuthStateService } from '../services/auth-state.service';
+import { AuthStateService } from '../../core/services/auth-state.service';
 
 /**
  * Guard para proteger rutas que requieren autenticación

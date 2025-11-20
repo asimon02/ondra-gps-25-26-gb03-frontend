@@ -54,7 +54,6 @@ export class AuthService {
     );
   }
 
-  // auth.service.ts
   logout(): void {
     const refreshToken = this.authState.getRefreshToken();
 
@@ -70,7 +69,7 @@ export class AuthService {
         .pipe(
           catchError(err => {
             console.warn('⚠️ Error al revocar token en servidor:', err);
-            return of(undefined); // Ignorar error
+            return of(undefined);
           })
         )
         .subscribe(() => {
@@ -89,7 +88,6 @@ export class AuthService {
 
     return this.http.post<RefreshTokenResponseDTO>(`${this.API_URL}/refresh`, body).pipe(
       tap(response => {
-        // Actualizar tokens
         this.authState.updateTokens(
           response.accessToken,
           response.refreshToken,
@@ -141,6 +139,30 @@ export class AuthService {
     );
   }
 
+  /**
+   * ✨ NUEVO: Marca el onboarding como completado para un usuario.
+   * Se llama cuando el usuario completa o omite el wizard de preferencias.
+   *
+   * @param idUsuario ID del usuario autenticado
+   * @returns Observable<void>
+   */
+  marcarOnboardingCompletado(idUsuario: number): Observable<void> {
+    return this.http.patch<void>(
+      `${this.API_URL}/${idUsuario}/onboarding-completado`,
+      {}
+    ).pipe(
+      tap(() => {
+        // Actualizar el usuario actual en AuthStateService
+        const usuarioActual = this.authState.currentUser();
+        if (usuarioActual && usuarioActual.idUsuario === idUsuario) {
+          this.authState.updateUserInfo({ onboardingCompletado: true });
+          console.log('✅ Onboarding marcado como completado');
+        }
+      }),
+      catchError(this.handleError)
+    );
+  }
+
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'Ha ocurrido un error desconocido';
 
@@ -174,6 +196,4 @@ export class AuthService {
     console.error('❌ Error en AuthService:', errorMessage, error);
     return throwError(() => new Error(errorMessage));
   }
-
-
 }

@@ -1,53 +1,79 @@
+// src/app/features/songs/models/song.model.ts
+
 export interface CancionDTO {
   idCancion: number;
   tituloCancion: string;
-  duracionSegundos: number;
-  fechaLanzamiento: string;
-  urlAudio: string;
-  urlPortada?: string;
+  idArtista: number;
+  genero: string;
   precioCancion: number;
+  duracionSegundos: number;
+  urlPortada: string;
+  urlAudio: string;
   reproducciones: number;
-  artista: {
-    idArtista: number;
-    nombreArtistico: string;
-  };
-  genero: {
-    idGenero: number;
-    nombreGenero: string;
-  };
-  album?: {
-    idAlbum: number;
-    tituloAlbum: string;
-  };
+  valoracionMedia: number | null;
+  totalComentarios: number;
+  fechaPublicacion: string;
+  descripcion: string;
+  album: AlbumResumenDTO | null;
+}
+
+export interface CancionDetalleDTO {
+  idCancion: number;
+  tituloCancion: string;
+  idArtista: number;
+  genero: string;
+  precioCancion: number;
+  duracionSegundos: number;
+  urlPortada: string;
+  urlAudio: string;
+  reproducciones: number;
+  valoracionMedia: number | null;
+  totalComentarios: number;
+  fechaPublicacion: string;
+  descripcion: string;
+  albumes: AlbumResumenConPistaDTO[];
+}
+
+export interface AlbumResumenDTO {
+  idAlbum: number;
+  tituloAlbum: string;
+  urlPortada: string;
+}
+
+export interface AlbumResumenConPistaDTO {
+  idAlbum: number;
+  tituloAlbum: string;
+  urlPortada: string;
+  numeroPista: number;
 }
 
 export interface CrearCancionDTO {
   tituloCancion: string;
-  duracionSegundos: number;
-  fechaLanzamiento: string; // YYYY-MM-DD
-  urlAudio: string;
-  urlPortada?: string;
-  precioCancion: number;
   idGenero: number;
-  idAlbum?: number;
+  precioCancion: number;
+  duracionSegundos: number;
+  urlPortada?: string;
+  urlAudio: string;
+  descripcion?: string;
 }
 
-export interface ArchivoAudioResponseDTO {
-  url_audio: string;
-  public_id: string;
-  format: string;
-  duracion_segundos?: number;
-  tamano_bytes: number;
-  fecha_subida: string;
+export interface EditarCancionDTO {
+  tituloCancion?: string;
+  idGenero?: number;
+  precioCancion?: number;
+  urlPortada?: string;
+  descripcion?: string;
 }
 
-export interface ArchivoImagenResponseDTO {
-  url_imagen: string;
-  url_thumbnail: string;
-  public_id: string;
-  format: string;
-  ancho: number;
-  alto: number;
-  tamano_bytes: number;
-  fecha_subida: string;
+export interface CancionesPaginadasDTO {
+  canciones: CancionDTO[];
+  paginaActual: number;
+  totalPaginas: number;
+  totalElementos: number;
+  elementosPorPagina: number;
+}
+
+export interface ReproduccionResponseDTO {
+  id: string;
+  totalPlays: number;
 }

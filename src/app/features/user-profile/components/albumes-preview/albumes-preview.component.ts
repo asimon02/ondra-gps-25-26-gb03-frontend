@@ -1,5 +1,3 @@
-// src/app/features/user-profile/components/albumes-preview/albumes-preview.component.ts
-
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -15,7 +13,8 @@ import { AlbumDTO } from '../../../albums/models/album.model';
   styleUrls: ['./albumes-preview.component.scss']
 })
 export class AlbumesPreviewComponent implements OnInit {
-  @Input() artistaId!: number;
+  @Input() artistaId?: number;
+  @Input() nombreArtista?: string; // ✅ CAMBIAR A nombreArtista (sin "ico")
   @Input() isOwnProfile: boolean = false;
 
   albumes: CarouselItem[] = [];
@@ -28,82 +27,52 @@ export class AlbumesPreviewComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.cargarAlbumes();
+    console.log('💿 AlbumesPreview - Inputs recibidos:', {
+      artistaId: this.artistaId,
+      nombreArtista: this.nombreArtista, // ✅ Verificar qué llega
+      isOwnProfile: this.isOwnProfile
+    });
+
+    if (this.artistaId) {
+      this.cargarAlbumes();
+    } else {
+      this.isLoading = false;
+    }
   }
 
   cargarAlbumes(): void {
+    if (!this.artistaId) {
+      this.isLoading = false;
+      return;
+    }
+
     this.isLoading = true;
     this.errorMessage = '';
 
-    // Usar el endpoint correcto según si es el propio perfil o no
-    const observable = this.isOwnProfile
-      ? this.albumService.listarMisAlbumes()
-      : this.albumService.listarAlbumes({ artista: this.artistaId });
+    this.albumService.obtenerAlbumesPorArtista(this.artistaId).subscribe({
+      next: (albumes: AlbumDTO[]) => {
+        console.log('✅ Álbumes cargados:', albumes);
+        console.log('🎨 Nombre artista a usar:', this.nombreArtista);
 
-    observable.subscribe({
-      next: (response) => {
-        console.log('✅ Álbumes cargados:', response);
-
-        // Si es listarMisAlbumes(), la respuesta es directamente un array
-        // Si es listarAlbumes(), puede venir paginado o en un objeto
-        const albumesData = Array.isArray(response) ? response : (response.albumes || response.content || []);
-
-        this.albumes = albumesData.map((album: AlbumDTO) => ({
+        this.albumes = albumes.map((album: AlbumDTO) => ({
           id: album.idAlbum,
           nombre: album.tituloAlbum,
-          artista: album.artista || 'Artista',
+          artista: this.nombreArtista || 'Artista Desconocido', // ✅ USAR nombreArtista
           tipo: 'álbum' as const,
           imagen: album.urlPortada || 'https://via.placeholder.com/300x300?text=Sin+Portada'
         }));
+
+        console.log('💿 Primer álbum mapeado:', this.albumes[0]);
 
         this.isLoading = false;
       },
       error: (error) => {
         console.error('❌ Error al cargar álbumes:', error);
         this.errorMessage = 'No se pudieron cargar los álbumes';
-
-        // FALLBACK: Datos hardcodeados
-        console.warn('⚠️ Usando datos de ejemplo como fallback');
-        this.albumes = this.obtenerAlbumesFallback();
+        this.albumes = [];
         this.isLoading = false;
       }
     });
-  }
-
-  /**
-   * Devuelve datos hardcodeados como fallback en caso de error
-   */
-  private obtenerAlbumesFallback(): CarouselItem[] {
-    return [
-      {
-        id: 1,
-        nombre: 'Revolá',
-        artista: 'Sanguijuelas del Guadiana',
-        tipo: 'álbum',
-        imagen: 'https://i.discogs.com/Vj4nMORHrblEfXVKjRqpPd5wd-6G36TQxOjFiqxNjUE/rs:fit/g:sm/q:40/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM0Mzg0/MTk4LTE3NTEwMDk4/MjQtNTQ0MC5qcGVn.jpeg'
-      },
-      {
-        id: 2,
-        nombre: '100 AMAPOLAS',
-        artista: 'Sanguijuelas del Guadiana',
-        tipo: 'álbum',
-        imagen: 'https://i.discogs.com/Vj4nMORHrblEfXVKjRqpPd5wd-6G36TQxOjFiqxNjUE/rs:fit/g:sm/q:40/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM0Mzg0/MTk4LTE3NTEwMDk4/MjQtNTQ0MC5qcGVn.jpeg'
-      },
-      {
-        id: 3,
-        nombre: 'Mirando por los míos',
-        artista: 'Sanguijuelas del Guadiana',
-        tipo: 'álbum',
-        imagen: 'https://i.discogs.com/Vj4nMORHrblEfXVKjRqpPd5wd-6G36TQxOjFiqxNjUE/rs:fit/g:sm/q:40/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM0Mzg0/MTk4LTE3NTEwMDk4/MjQtNTQ0MC5qcGVn.jpeg'
-      },
-      {
-        id: 4,
-        nombre: 'Intacto',
-        artista: 'Sanguijuelas del Guadiana',
-        tipo: 'álbum',
-        imagen: 'https://i.discogs.com/Vj4nMORHrblEfXVKjRqpPd5wd-6G36TQxOjFiqxNjUE/rs:fit/g:sm/q:40/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM0Mzg0/MTk4LTE3NTEwMDk4/MjQtNTQ0MC5qcGVn.jpeg'
-      }
-    ];
   }
 
   onAddAlbum(): void {

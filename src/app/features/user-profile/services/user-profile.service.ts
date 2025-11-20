@@ -12,6 +12,7 @@ import { environment } from '../../../../enviroments/enviroment';
 export class UserProfileService {
   private apiUrlUsuarios = `${environment.apis.usuarios}/usuarios`;
   private apiUrlArtistas = `${environment.apis.usuarios}/artistas`;
+  private apiUrlConvertirse = `${environment.apis.usuarios}/convertirse-artista`; // 👈 Nueva URL
   private imagenesUrl = `${environment.apis.usuarios}/imagenes`;
 
   constructor(private http: HttpClient) {}
@@ -45,15 +46,32 @@ export class UserProfileService {
     );
   }
 
+  subirImagenPerfilArtista(file: File): Observable<{ url: string; mensaje: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string; mensaje: string }>(
+      `${this.imagenesUrl}/artista`,
+      formData
+    );
+  }
+
   /**
-   * Convertir usuario en artista
+   * 🔥 CORREGIDO: Convertir usuario en artista enviando MultipartFile
+   * Ahora envía FormData con archivo + datos JSON
    */
-  convertirseEnArtista(datos: {
+  convertirseEnArtista(file: File, datos: {
     nombreArtistico: string;
     biografiaArtistico: string;
-    fotoPerfilArtistico: string;
   }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrlArtistas}`, datos);
+    const formData = new FormData();
+
+    // Agregar la foto como archivo
+    formData.append('foto', file);
+
+    // Agregar los datos como JSON
+    formData.append('datos', new Blob([JSON.stringify(datos)], { type: 'application/json' }));
+
+    return this.http.post<any>(this.apiUrlConvertirse, formData); // 👈 URL correcta
   }
 
   /**
@@ -65,26 +83,15 @@ export class UserProfileService {
     });
   }
 
-  subirImagenPerfilArtista(file: File): Observable<{ url: string; mensaje: string }> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<{ url: string; mensaje: string }>(
-      `${this.imagenesUrl}/artista`,
-      formData
-    );
-  }
-
-  // ✅ CORREGIDO: Renunciar al perfil de artista (volver a ser usuario normal)
-  // POST /artistas/{id}/renunciar
+  // ✅ Renunciar al perfil de artista (volver a ser usuario normal)
   dejarDeSerArtista(idArtista: number): Observable<SuccessfulResponseDTO> {
     return this.http.post<SuccessfulResponseDTO>(
       `${this.apiUrlArtistas}/${idArtista}/renunciar`,
-      {} // Body vacío
+      {}
     );
   }
 
-  // ✅ CORREGIDO: Eliminar cuenta completamente (marca como inactivo)
-  // DELETE /artistas/{id}
+  // ✅ Eliminar cuenta completamente (marca como inactivo)
   eliminarCuenta(idArtista: number): Observable<SuccessfulResponseDTO> {
     return this.http.delete<SuccessfulResponseDTO>(
       `${this.apiUrlArtistas}/${idArtista}`

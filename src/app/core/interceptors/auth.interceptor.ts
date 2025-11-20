@@ -1,6 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { AuthStateService } from '../services/auth-state.service';
+import { AuthStateService } from '../../core/services/auth-state.service';
 
 /**
  * Interceptor que agrega el token JWT a las peticiones

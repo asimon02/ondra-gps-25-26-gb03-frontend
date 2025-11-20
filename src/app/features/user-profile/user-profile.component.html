@@ -179,7 +179,8 @@
         <!-- Canciones -->
         <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
           <app-canciones-preview
-            [artistaId]="userProfile.idUsuario"
+            [artistaId]="userProfile.idArtista"
+            [nombreArtista]="userProfile.nombreArtistico"
             [isOwnProfile]="true">
           </app-canciones-preview>
         </div>
@@ -187,7 +188,8 @@
         <!-- Álbumes -->
         <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
           <app-albumes-preview
-            [artistaId]="userProfile.idUsuario"
+            [artistaId]="userProfile.idArtista"
+            [nombreArtista]="userProfile.nombreArtistico"
             [isOwnProfile]="true">
           </app-albumes-preview>
         </div>
@@ -217,6 +219,6 @@
   <app-become-artist-modal
     *ngIf="mostrarBecomeArtistModal"
     (closeModal)="cerrarBecomeArtistModal()"
-    (artistCreated)="onArtistCreated()">
+    (artistaCreado)="onArtistCreated($event)">
   </app-become-artist-modal>
 </div>

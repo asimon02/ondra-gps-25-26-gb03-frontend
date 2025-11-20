@@ -4,6 +4,7 @@ import { Component, Output, EventEmitter, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { UserProfileService } from '../../services/user-profile.service';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-become-artist-modal',
@@ -14,10 +15,11 @@ import { UserProfileService } from '../../services/user-profile.service';
 })
 export class BecomeArtistModalComponent {
   @Output() closeModal = new EventEmitter<void>();
-  @Output() artistaCreado = new EventEmitter<void>();
+  @Output() artistaCreado = new EventEmitter<any>();
 
   private fb = inject(FormBuilder);
   private userProfileService = inject(UserProfileService);
+  private authState = inject(AuthStateService);
 
   artistForm!: FormGroup;
   isSubmitting = signal(false);
@@ -49,10 +51,8 @@ export class BecomeArtistModalComponent {
     });
   }
 
-  // ✅ Validador personalizado: no permitir caracteres especiales problemáticos
   private noSpecialCharsValidator(control: AbstractControl): { [key: string]: any } | null {
     if (!control.value) return null;
-
     const forbidden = /[<>{}[\]\\\/]/.test(control.value);
     return forbidden ? { specialChars: true } : null;
   }
@@ -67,14 +67,12 @@ export class BecomeArtistModalComponent {
 
     if (!file) return;
 
-    // Validar formato
     if (!this.ALLOWED_FORMATS.includes(file.type)) {
       this.errorMessage.set('Solo se permiten imágenes JPG, PNG o WEBP');
       this.clearFileSelection();
       return;
     }
 
-    // Validar tamaño
     if (file.size > this.MAX_FILE_SIZE) {
       this.errorMessage.set('La imagen no puede superar los 5MB');
       this.clearFileSelection();
@@ -86,7 +84,6 @@ export class BecomeArtistModalComponent {
     this.artistForm.get('fotoPerfilArtistico')?.updateValueAndValidity();
     this.errorMessage.set(null);
 
-    // Generar preview
     const reader = new FileReader();
     reader.onload = (e) => {
       this.previewUrl.set(e.target?.result as string);
@@ -131,37 +128,47 @@ export class BecomeArtistModalComponent {
       return;
     }
 
-    // Paso 1: Subir imagen
-    this.userProfileService.subirImagenPerfilArtista(file).subscribe({
-      next: (uploadResponse) => {
-        console.log('✅ Imagen subida:', uploadResponse.url);
+    const artistaData = {
+      nombreArtistico: this.artistForm.value.nombreArtistico,
+      biografiaArtistico: this.artistForm.value.biografiaArtistico
+    };
 
-        // Paso 2: Crear perfil de artista
-        const artistaData = {
-          nombreArtistico: this.artistForm.value.nombreArtistico,
-          biografiaArtistico: this.artistForm.value.biografiaArtistico,
-          fotoPerfilArtistico: uploadResponse.url
-        };
+    this.userProfileService.convertirseEnArtista(file, artistaData).subscribe({
+      next: (artistaResponse) => {
+        console.log('✅ Perfil de artista creado:', artistaResponse);
 
-        this.userProfileService.convertirseEnArtista(artistaData).subscribe({
-          next: () => {
-            console.log('✅ Perfil de artista creado');
-            this.artistaCreado.emit();
-            this.close();
-          },
-          error: (error) => {
-            console.error('❌ Error al crear perfil de artista:', error);
-            this.errorMessage.set(error.error?.message || 'Error al crear perfil de artista');
-            this.isSubmitting.set(false);
+        // Actualizar el usuario en AuthState
+        const usuarioActual = this.authState.currentUser();
+        if (usuarioActual?.idUsuario) {
+          this.userProfileService.obtenerPerfil(usuarioActual.idUsuario).subscribe({
+            next: (perfilCompleto) => {
+              // Actualizar AuthState con el perfil completo
+              this.authState.updateUser(perfilCompleto as any);
+              console.log('✅ Perfil actualizado en AuthState:', perfilCompleto);
 
-            // Intentar eliminar la imagen subida
-            this.userProfileService.eliminarImagen(uploadResponse.url).subscribe();
-          }
-        });
+              // Emitir el perfil completo para que el padre lo use directamente
+              this.artistaCreado.emit(perfilCompleto);
+              this.close();
+              this.isSubmitting.set(false);
+            },
+            error: (err) => {
+              console.error('⚠️ Error al recargar perfil:', err);
+              // Aun con error, emitir null para que el padre intente recargar desde el servidor
+              this.artistaCreado.emit(null);
+              this.close();
+              this.isSubmitting.set(false);
+            }
+          });
+        } else {
+          console.warn('⚠️ No hay usuario actual en AuthState');
+          this.artistaCreado.emit(null);
+          this.close();
+          this.isSubmitting.set(false);
+        }
       },
       error: (error) => {
-        console.error('❌ Error al subir imagen:', error);
-        this.errorMessage.set('Error al subir la imagen');
+        console.error('❌ Error al crear perfil de artista:', error);
+        this.errorMessage.set(error.error?.message || 'Error al crear perfil de artista');
         this.isSubmitting.set(false);
       }
     });
@@ -170,7 +177,6 @@ export class BecomeArtistModalComponent {
   // ============================================
   // UTILIDADES
   // ============================================
-  @Output() artistCreated = new EventEmitter<unknown>();
 
   close(): void {
     this.closeModal.emit();

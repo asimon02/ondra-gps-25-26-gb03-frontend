@@ -12,6 +12,7 @@ export interface UserProfile {
   slug: string;
   activo: boolean;
   permiteGoogle: boolean;
+  onboardingCompletado: boolean;
   googleUid?: string;
   emailVerificado: boolean;
   fechaRegistro: string | number[];

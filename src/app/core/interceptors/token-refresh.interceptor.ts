@@ -1,8 +1,8 @@
 import { HttpInterceptorFn, HttpErrorResponse, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, switchMap, throwError, BehaviorSubject, filter, take, Observable } from 'rxjs';
-import { AuthService } from '../services/auth.service';
-import { AuthStateService } from '../services/auth-state.service';
+import { AuthService } from '../../core/services/auth.service';
+import { AuthStateService } from '../../core/services/auth-state.service';
 
 /**
  * Interceptor que maneja el refresh automático de tokens expirados

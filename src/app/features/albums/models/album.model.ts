@@ -1,38 +1,79 @@
+// src/app/features/albums/models/album.model.ts
+
 export interface AlbumDTO {
   idAlbum: number;
   tituloAlbum: string;
-  descripcionAlbum?: string;
-  fechaLanzamiento: string;
-  urlPortada?: string;
+  idArtista: number;
+  genero: string;
   precioAlbum: number;
-  artista: {
-    idArtista: number;
-    nombreArtistico: string;
-  };
-  genero: {
-    idGenero: number;
-    nombreGenero: string;
-  };
-  canciones: Array<{
-    idCancion: number;
-    tituloCancion: string;
-    duracionSegundos: number;
-    numeroCancion: number;
-  }>;
+  urlPortada: string;
   totalCanciones: number;
   duracionTotalSegundos: number;
+  totalPlayCount: number;
+  valoracionMedia: number | null;
+  totalComentarios: number;
+  fechaPublicacion: string;
+  descripcion: string;
+}
+
+export interface AlbumDetalleDTO {
+  idAlbum: number;
+  tituloAlbum: string;
+  idArtista: number;
+  genero: string;
+  precioAlbum: number;
+  urlPortada: string;
+  totalCanciones: number;
+  duracionTotalSegundos: number;
+  totalPlayCount: number;
+  valoracionMedia: number | null;
+  totalComentarios: number;
+  fechaPublicacion: string;
+  descripcion: string;
+  trackList: CancionAlbumDTO[];
+}
+
+export interface CancionAlbumDTO {
+  idCancion: number;
+  tituloCancion: string;
+  duracionSegundos: number;
+  trackNumber: number;
+  urlPortada: string;
+  urlAudio: string;
+  precioCancion: number;
+  reproducciones: number;
 }
 
 export interface CrearAlbumDTO {
   tituloAlbum: string;
-  descripcionAlbum?: string;
-  fechaLanzamiento: string; // YYYY-MM-DD
-  urlPortada?: string;
-  precioAlbum: number;
   idGenero: number;
+  precioAlbum: number;
+  urlPortada: string;
+  descripcion?: string;
+}
+
+export interface EditarAlbumDTO {
+  tituloAlbum?: string;
+  idGenero?: number;
+  precioAlbum?: number;
+  urlPortada?: string;
+  descripcion?: string;
 }
 
 export interface AgregarCancionAlbumDTO {
   idCancion: number;
-  numeroCancion: number;
+  numeroPista: number;
+}
+
+export interface AlbumesPaginadosDTO {
+  albumes: AlbumDTO[];
+  paginaActual: number;
+  totalPaginas: number;
+  totalElementos: number;
+  elementosPorPagina: number;
+}
+
+export interface EstadisticasArtistaDTO {
+  idArtista: number;
+  totalReproducciones: number;
 }
