@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnDestroy, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Song } from '../../../../core/models/song.model';
 import { MusicPlayerService } from '../../../../core/services/music-player.service';
@@ -8,7 +9,7 @@ import { MusicPlayerService } from '../../../../core/services/music-player.servi
 @Component({
   selector: 'app-music-player',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './music-player.component.html',
   styles: [`
     @keyframes slide-up {

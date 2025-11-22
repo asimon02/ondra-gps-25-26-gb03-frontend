@@ -1,6 +1,11 @@
 export const environment = {
   production: true,
 
+  /**
+   * En producción, siempre usar backend real
+   */
+  useMock: false,
+
   // APIs de microservicios
   apis: {
     usuarios: 'http://localhost:8080/api',

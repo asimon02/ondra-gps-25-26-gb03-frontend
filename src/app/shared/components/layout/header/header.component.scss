@@ -1,6 +1,7 @@
 .nav-link {
   position: relative;
   padding-bottom: 4px;
+  color: #e0f2fe; // blue-100
 
   &::after {
     content: '';
@@ -9,7 +10,7 @@
     left: 0;
     width: 0;
     height: 2px;
-    background-color: #2563EB; // azul tailwind (blue-600)
+    background-color: #93c5fd; // blue-300
     border-radius: 1px;
     transition: width 0.3s ease;
   }
@@ -20,7 +21,7 @@
 }
 
 .active-link {
-  color: #2563EB; // azul tailwind (blue-600)
+  color: #bfdbfe; // blue-200
 
   &::after {
     width: 100%;

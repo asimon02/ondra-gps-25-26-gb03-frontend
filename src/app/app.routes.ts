@@ -67,6 +67,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/support/faq-support/faq-support.component').then(m => m.FaqSupportComponent)
   },
   {
+    path: 'explore',
+    loadComponent: () => import('./features/music/pages/explore/explore.component').then(m => m.ExploreComponent)
+  },
+  {
+    path: 'song/:id',
+    loadComponent: () => import('./features/music/pages/song-detail/song-detail.component').then(m => m.SongDetailComponent)
+  },
+  {
+    path: 'album/:id',
+    loadComponent: () => import('./features/music/pages/album-detail/album-detail.component').then(m => m.AlbumDetailComponent)
+  },
+  {
     path: '**',
     redirectTo: ''
   }
