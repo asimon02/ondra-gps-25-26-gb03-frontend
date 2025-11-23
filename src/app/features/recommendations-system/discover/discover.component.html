@@ -1,0 +1,127 @@
+<div class="discover-container">
+  
+  <!-- Header -->
+  <header class="discover-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="page-title">
+          <span class="icon">🎵</span>
+          Descubrir Música
+        </h1>
+        <p class="page-subtitle">
+          Recomendaciones personalizadas basadas en tus gustos musicales
+        </p>
+      </div>
+
+      <!-- Preferencias badge -->
+      <div class="preferences-badge" *ngIf="preferencias.length > 0">
+        <div class="badge-content">
+          <span class="badge-icon">❤️</span>
+          <div class="badge-text">
+            <span class="badge-count">{{ preferencias.length }} géneros favoritos</span>
+            <span class="badge-genre">{{ generoFavorito }} y más</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filtros y Controles -->
+  <section class="filters-section" *ngIf="!isLoadingPreferencias && preferencias.length > 0">
+    <div class="filters-container">
+      
+      <!-- Filtro de categoría -->
+      <div class="filter-group">
+        <label class="filter-label">Mostrar:</label>
+        <div class="category-tabs">
+          <button 
+            class="tab-button"
+            [class.active]="categoriaSeleccionada === 'todas'"
+            (click)="cambiarCategoria('todas')"
+          >
+            Todo
+          </button>
+          <button 
+            class="tab-button"
+            [class.active]="categoriaSeleccionada === 'canciones'"
+            (click)="cambiarCategoria('canciones')"
+          >
+            🎵 Canciones
+          </button>
+          <button 
+            class="tab-button"
+            [class.active]="categoriaSeleccionada === 'albumes'"
+            (click)="cambiarCategoria('albumes')"
+          >
+            💿 Álbumes
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtro de cantidad -->
+      <div class="filter-group">
+        <label class="filter-label">Cantidad:</label>
+        <select 
+          class="select-input"
+          [(ngModel)]="limiteRecomendaciones"
+          (change)="cargarRecomendaciones()"
+        >
+          <option *ngFor="let opcion of opcionesLimite" [value]="opcion">
+            {{ opcion }} resultados
+          </option>
+        </select>
+      </div>
+
+      <!-- Botón recargar -->
+      <button 
+        class="btn-reload"
+        (click)="recargarRecomendaciones()"
+        [disabled]="isLoading"
+        title="Recargar recomendaciones"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" [class.spinning]="isLoading">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+
+      <!-- Contador de resultados -->
+      <div class="results-counter" *ngIf="recomendaciones">
+        <span class="counter-number">{{ conteoActual }}</span>
+        <span class="counter-text">recomendaciones</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Estado: Cargando preferencias -->
+  <div class="loading-state" *ngIf="isLoadingPreferencias">
+    <div class="spinner-large"></div>
+    <p>Cargando tus preferencias...</p>
+  </div>
+
+  <!-- Grid de Contenido -->
+  <section class="content-section" *ngIf="!isLoadingPreferencias && preferencias.length > 0">
+    
+    <!-- Loading state -->
+    <div class="loading-overlay" *ngIf="isLoading">
+      <div class="spinner-large"></div>
+      <p>Buscando recomendaciones para ti...</p>
+    </div>
+
+    <!-- Error state -->
+    <div class="error-state" *ngIf="!isLoading && errorMessage">
+      <div class="error-icon">⚠️</div>
+      <p>{{ errorMessage }}</p>
+      <button class="btn-secondary" (click)="recargarRecomendaciones()">
+        Intentar de nuevo
+      </button>
+    </div>
+
+    <!-- Content Grid -->
+    <app-discover-content-grid
+      *ngIf="!isLoading && !errorMessage && recomendaciones"
+      [recomendaciones]="recomendaciones"
+      [categoriaActual]="categoriaSeleccionada"
+    ></app-discover-content-grid>
+
+  </section>
+</div>
