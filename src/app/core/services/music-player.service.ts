@@ -30,6 +30,7 @@ export class MusicPlayerService {
 
   constructor() {
     this.audioElement = new Audio();
+    this.audioElement.crossOrigin = 'anonymous';
     this.setupAudioListeners();
     this.audioElement.volume = 0.5;
   }
@@ -95,6 +96,29 @@ export class MusicPlayerService {
         this.audioElement.removeEventListener('loadedmetadata', onMetadataLoaded);
       };
       this.audioElement.addEventListener('loadedmetadata', onMetadataLoaded);
+    }
+  }
+
+  /**
+   * Actualiza los datos de la canci��n actual sin reiniciar el audio.
+   * Útil para reflejar cambios como favoritos o compras hechos desde otros componentes.
+   */
+  updateCurrentSong(update: Partial<Song> & { id: string }): void {
+    const current = this.currentSongSubject.value;
+    if (!current || current.id !== update.id) {
+      return;
+    }
+
+    const mergedSong = { ...current, ...update };
+    this.currentSongSubject.next(mergedSong);
+
+    // Mantener la playlist en sync para reflejar el cambio en el resto de la UI
+    const playlist = this.playlistSubject.value;
+    if (playlist.length > 0) {
+      const updatedPlaylist = playlist.map(song =>
+        song.id === mergedSong.id ? { ...song, ...update } : song
+      );
+      this.playlistSubject.next(updatedPlaylist);
     }
   }
 

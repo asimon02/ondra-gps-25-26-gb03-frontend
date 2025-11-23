@@ -9,23 +9,25 @@
 
     <!-- LEFT: Cover + info (ANCHO FIJO) -->
     <div class="flex items-center gap-3 w-64 flex-shrink-0">
-      <img
-        [src]="currentSong.coverUrl"
-        [alt]="currentSong.title"
-        class="w-12 h-12 rounded-lg object-cover shadow-sm flex-shrink-0"
-      />
+      <a
+        [routerLink]="['/song', currentSong.id]"
+        class="flex items-center gap-3 w-full min-w-0 group/song-link"
+      >
+        <img
+          [src]="currentSong.coverUrl"
+          [alt]="currentSong.title"
+          class="w-12 h-12 rounded-lg object-cover shadow-sm flex-shrink-0 transition transform group-hover/song-link:scale-[1.02]"
+        />
 
-      <div class="flex flex-col justify-center min-w-0 flex-1 leading-[1.05]">
-        <!-- Título truncado -->
-        <span class="text-sm font-semibold text-gray-900 truncate">
-          {{ currentSong.title }}
-        </span>
-
-        <!-- Artista truncado -->
-        <span class="text-xs text-gray-500 truncate -mt-[1px]">
-          {{ currentSong.artist.artisticName }}
-        </span>
-      </div>
+        <div class="flex flex-col justify-center min-w-0 flex-1 leading-[1.05]">
+          <span class="text-sm font-semibold text-gray-900 truncate group-hover/song-link:text-blue-700">
+            {{ currentSong.title }}
+          </span>
+          <span class="text-xs text-gray-500 truncate -mt-[1px] group-hover/song-link:text-blue-600">
+            {{ currentSong.artist.artisticName }}
+          </span>
+        </div>
+      </a>
 
       <!-- Heart -->
       <button

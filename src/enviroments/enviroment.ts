@@ -1,6 +1,12 @@
 export const environment = {
   production: false,
 
+  /**
+   * Control de modo: true = usa mocks, false = usa backend real
+   * Cambiar este valor permite alternar entre modos sin modificar código
+   */
+  useMock: false,
+
   // APIs de microservicios
   apis: {
     usuarios: 'http://localhost:8080/api',

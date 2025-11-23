@@ -1,33 +1,53 @@
-<nav class="w-full p-2 bg-blue-100 border-b border-gray-300 flex justify-center sticky top-0 z-40">
-  <div class="w-full max-w-screen-2xl flex justify-between items-center">
+<nav class="w-full p-2 bg-blue-900 border-b border-blue-800 text-white flex justify-center sticky top-0 z-40 shadow-md">
+  <div class="w-full max-w-screen-2xl flex justify-between items-center px-4 lg:px-6">
     <!-- Logo y navegación -->
     <div class="w-fit gap-12 flex items-center">
       <div class="pt-2 pb-2 pr-4 pl-4">
         <a routerLink="/">
-          <img class="w-[180px] object-contain" src="/assets/logos/logo_txt.png" alt="OndraSounds logo">
+          <img class="w-[180px] object-contain drop-shadow" src="/assets/logos/logo_txt_blanco.png" alt="OndraSounds logo">
         </a>
       </div>
 
       <!-- Links mejorados (más grandes y con efecto hover) -->
-      <div class="w-fit flex gap-6 text-[16px] font-semibold">
+      <div class="w-fit flex gap-8 text-[16px] font-semibold text-white">
         <a
-          class="nav-link hover:text-blue-600 cursor-pointer transition-colors duration-200"
+          class="nav-link hover:text-blue-200 cursor-pointer transition-colors duration-200"
           routerLink="/"
           routerLinkActive="active-link"
           [routerLinkActiveOptions]="{exact: true}">
           Inicio
         </a>
         <a
-          class="nav-link hover:text-blue-600 cursor-pointer transition-colors duration-200"
-          routerLink="/explorar"
+          class="nav-link hover:text-blue-200 cursor-pointer transition-colors duration-200"
+          routerLink="/explore"
           routerLinkActive="active-link">
-          Explorar contenido
+          Explorar
+        </a>
+        <a
+          class="nav-link hover:text-blue-200 cursor-pointer transition-colors duration-200"
+          routerLink="/faq-support"
+          routerLinkActive="active-link">
+          Ayuda / FAQs
         </a>
       </div>
     </div>
 
     <!-- Profile button -->
     <div class="w-fit flex items-center gap-4">
+      <a
+        routerLink="/carrito"
+        class="p-2.5 rounded-full hover:bg-[#23C4A7] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#1FB79B] transition-colors duration-200"
+        aria-label="Ir al carrito">
+        <svg
+          class="w-7 h-7 text-white"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l1.5 10h11L19 7H5.2"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20.5a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0zM17 20.5a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0z"></path>
+        </svg>
+      </a>
       <app-profile-button></app-profile-button>
     </div>
   </div>
