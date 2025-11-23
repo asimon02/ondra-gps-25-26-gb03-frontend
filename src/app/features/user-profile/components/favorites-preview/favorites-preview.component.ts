@@ -3,8 +3,13 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { ContentCarouselComponent, CarouselItem } from '../content-carousel/content-carousel.component';
 import { environment } from '../../../../../enviroments/enviroment';
+import { MusicPlayerService } from '../../../../core/services/music-player.service';
+import { AlbumService as CoreAlbumService } from '../../../../core/services/album.service';
+import { SongService as CoreSongService } from '../../../../core/services/song.service';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-favorites-preview',
@@ -20,7 +25,14 @@ export class FavoritesPreviewComponent implements OnInit {
   favoritos: CarouselItem[] = [];
   isLoading = true;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private playerService: MusicPlayerService,
+    private coreAlbumService: CoreAlbumService,
+    private coreSongService: CoreSongService,
+    private authState: AuthStateService
+  ) {}
 
   ngOnInit(): void {
     this.cargarFavoritos();
@@ -73,6 +85,54 @@ export class FavoritesPreviewComponent implements OnInit {
 
   onItemClick(item: CarouselItem): void {
     console.log('Favorito clickeado:', item);
-    // TODO: Navegar a detalle de la canción/álbum
+    if (item.tipo === 'álbum') {
+      this.router.navigate([`/album/${item.id}`]);
+    } else {
+      this.router.navigate([`/song/${item.id}`]);
+    }
+  }
+
+  onPlayClick(item: CarouselItem): void {
+    console.log('Reproducir favorito:', item);
+
+    if (item.tipo === 'álbum') {
+      // Cargar álbum y reproducir primera canción
+      this.coreAlbumService.getAlbumById(item.id.toString()).subscribe({
+        next: (album) => {
+          if (album.trackList && album.trackList.length > 0) {
+            this.playerService.setPlaylist(album.trackList);
+            this.playerService.playSong(album.trackList[0], true);
+            if (this.authState.isAuthenticated()) {
+              this.coreSongService.registerPlay(album.trackList[0].id).subscribe({
+                error: (err) => console.error('Error registering play:', err)
+              });
+            }
+          } else {
+            alert('Este álbum no tiene canciones disponibles');
+          }
+        },
+        error: (err) => {
+          console.error('Error loading album:', err);
+          alert('Error al cargar el álbum');
+        }
+      });
+    } else {
+      // Cargar y reproducir canción
+      this.coreSongService.getSongById(item.id.toString()).subscribe({
+        next: (song) => {
+          this.playerService.setPlaylist([song]);
+          this.playerService.playSong(song, true);
+          if (this.authState.isAuthenticated()) {
+            this.coreSongService.registerPlay(song.id).subscribe({
+              error: (err) => console.error('Error registering play:', err)
+            });
+          }
+        },
+        error: (err) => {
+          console.error('Error loading song:', err);
+          alert('Error al cargar la canción');
+        }
+      });
+    }
   }
 }

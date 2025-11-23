@@ -4,6 +4,10 @@ import { Router } from '@angular/router';
 import { ContentCarouselComponent, CarouselItem } from '../content-carousel/content-carousel.component';
 import { AlbumService } from '../../../albums/services/album.service';
 import { AlbumDTO } from '../../../albums/models/album.model';
+import { MusicPlayerService } from '../../../../core/services/music-player.service';
+import { AlbumService as CoreAlbumService } from '../../../../core/services/album.service';
+import { SongService as CoreSongService } from '../../../../core/services/song.service';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-albumes-preview',
@@ -23,7 +27,11 @@ export class AlbumesPreviewComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private albumService: AlbumService
+    private albumService: AlbumService,
+    private playerService: MusicPlayerService,
+    private coreAlbumService: CoreAlbumService,
+    private coreSongService: CoreSongService,
+    private authState: AuthStateService
   ) {}
 
   ngOnInit(): void {
@@ -82,5 +90,32 @@ export class AlbumesPreviewComponent implements OnInit {
   onItemClick(item: CarouselItem): void {
     console.log('Álbum clickeado:', item);
     this.router.navigate([`/album/${item.id}`]);
+  }
+
+  onPlayClick(item: CarouselItem): void {
+    console.log('Reproducir álbum:', item);
+    // Cargar el álbum completo desde la API usando el core service
+    this.coreAlbumService.getAlbumById(item.id.toString()).subscribe({
+      next: (album) => {
+        if (album.trackList && album.trackList.length > 0) {
+          // Establecer playlist con todas las canciones del álbum
+          this.playerService.setPlaylist(album.trackList);
+          // Reproducir la primera canción con auto-play
+          this.playerService.playSong(album.trackList[0], true);
+          // Registrar reproducción solo si hay sesión
+          if (this.authState.isAuthenticated()) {
+            this.coreSongService.registerPlay(album.trackList[0].id).subscribe({
+              error: (err) => console.error('Error registering play:', err)
+            });
+          }
+        } else {
+          alert('Este álbum no tiene canciones disponibles');
+        }
+      },
+      error: (err) => {
+        console.error('Error loading album:', err);
+        alert('Error al cargar el álbum');
+      }
+    });
   }
 }

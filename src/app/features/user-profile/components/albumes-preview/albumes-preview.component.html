@@ -8,7 +8,8 @@
     [showAddButton]="isOwnProfile"
     [emptyMessage]="isOwnProfile ? 'Aún no has subido ningún álbum' : 'Este artista aún no ha publicado álbumes'"
     (addClick)="onAddAlbum()"
-    (itemClick)="onItemClick($event)">
+    (itemClick)="onItemClick($event)"
+    (playClick)="onPlayClick($event)">
   </app-content-carousel>
 </div>
 

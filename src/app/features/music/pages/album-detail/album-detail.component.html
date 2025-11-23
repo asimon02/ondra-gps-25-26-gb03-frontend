@@ -70,7 +70,7 @@
 
       </svg>
 
-      <span class="font-medium">Volver a explorar</span>
+      <span class="font-medium">Volver</span>
 
     </button>
 
@@ -328,6 +328,12 @@
 
         </div>
 
+
+
+        <rating-widget
+          [contentId]="+album.id"
+          type="album"
+        ></rating-widget>
 
 
         <!-- Tracklist Section -->
@@ -603,6 +609,15 @@
 
     </div>
 
+    <div class="mt-10 lg:mt-12">
+      <app-comments-section
+        [contentId]="+album.id"
+        type="album"
+        [contentTitle]="album.title"
+        (totalChanged)="onCommentsCountChange($event)"
+      ></app-comments-section>
+    </div>
+
   </div>
 
 
@@ -620,4 +635,3 @@
   ></app-music-player>
 
 </div>
-

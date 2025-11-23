@@ -4,6 +4,9 @@ import { Router } from '@angular/router';
 import { ContentCarouselComponent, CarouselItem } from '../content-carousel/content-carousel.component';
 import { SongService } from '../../../songs/services/song.service';
 import { CancionDTO } from '../../../songs/models/song.model';
+import { MusicPlayerService } from '../../../../core/services/music-player.service';
+import { SongService as CoreSongService } from '../../../../core/services/song.service';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-canciones-preview',
@@ -23,7 +26,10 @@ export class CancionesPreviewComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private songService: SongService
+    private songService: SongService,
+    private playerService: MusicPlayerService,
+    private coreSongService: CoreSongService,
+    private authState: AuthStateService
   ) {}
 
   ngOnInit(): void {
@@ -81,6 +87,29 @@ export class CancionesPreviewComponent implements OnInit {
 
   onItemClick(item: CarouselItem): void {
     console.log('Canción clickeada:', item);
-    this.router.navigate([`/cancion/${item.id}`]);
+    this.router.navigate([`/song/${item.id}`]);
+  }
+
+  onPlayClick(item: CarouselItem): void {
+    console.log('Reproducir canción:', item);
+    // Cargar la canción completa desde la API usando el core service
+    this.coreSongService.getSongById(item.id.toString()).subscribe({
+      next: (song) => {
+        // Establecer playlist con la canción
+        this.playerService.setPlaylist([song]);
+        // Reproducir la canción con auto-play
+        this.playerService.playSong(song, true);
+        // Registrar reproducción solo si hay sesión
+        if (this.authState.isAuthenticated()) {
+          this.coreSongService.registerPlay(song.id).subscribe({
+            error: (err) => console.error('Error registering play:', err)
+          });
+        }
+      },
+      error: (err) => {
+        console.error('Error loading song:', err);
+        alert('Error al cargar la canción');
+      }
+    });
   }
 }

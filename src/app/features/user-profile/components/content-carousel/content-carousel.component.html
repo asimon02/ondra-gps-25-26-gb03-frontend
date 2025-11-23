@@ -87,11 +87,15 @@
 
           <!-- Overlay con play -->
           <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center justify-center">
-            <div class="bg-primary text-white rounded-full p-3 transform scale-90 group-hover/item:scale-100 transition-transform shadow-lg">
+            <button
+              (click)="onPlayClick($event, item)"
+              class="bg-primary text-white rounded-full p-3 transform scale-90 group-hover/item:scale-100 transition-transform shadow-lg hover:bg-blue-700"
+              [attr.aria-label]="'Reproducir ' + item.nombre"
+              [attr.title]="'Reproducir ' + item.nombre">
               <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
               </svg>
-            </div>
+            </button>
           </div>
         </div>
 

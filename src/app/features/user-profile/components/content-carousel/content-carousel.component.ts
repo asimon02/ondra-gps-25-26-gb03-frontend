@@ -27,6 +27,7 @@ export class ContentCarouselComponent implements AfterViewInit {
   @Input() emptyMessage: string = 'No hay elementos';
   @Output() addClick = new EventEmitter<void>();
   @Output() itemClick = new EventEmitter<CarouselItem>();
+  @Output() playClick = new EventEmitter<CarouselItem>();
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
 
@@ -81,6 +82,11 @@ export class ContentCarouselComponent implements AfterViewInit {
 
   onItemClick(item: CarouselItem): void {
     this.itemClick.emit(item);
+  }
+
+  onPlayClick(event: Event, item: CarouselItem): void {
+    event.stopPropagation();
+    this.playClick.emit(item);
   }
 
   getDefaultImage(): string {

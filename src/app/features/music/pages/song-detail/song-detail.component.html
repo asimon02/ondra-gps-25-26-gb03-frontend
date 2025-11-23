@@ -34,7 +34,7 @@
       <svg class="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
       </svg>
-      <span class="font-medium">Volver a explorar</span>
+      <span class="font-medium">Volver</span>
     </button>
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -202,6 +202,12 @@
           </div>
         </div>
 
+        <!-- Rating Widget -->
+        <rating-widget
+          [contentId]="+song.id"
+          type="song"
+        ></rating-widget>
+
         <!-- Artist Info -->
         <div class="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
           <div class="flex items-center gap-5">
@@ -240,6 +246,15 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="mt-10 lg:mt-12">
+      <app-comments-section
+        [contentId]="+song.id"
+        type="song"
+        [contentTitle]="song.title"
+        (totalChanged)="onCommentsCountChange($event)"
+      ></app-comments-section>
     </div>
   </div>
 

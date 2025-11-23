@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SongService } from '../../../../core/services/song.service';
@@ -7,13 +7,15 @@ import { ArtistService } from '../../../../core/services/artist.service';
 import { MusicPlayerService } from '../../../../core/services/music-player.service';
 import { Song } from '../../../../core/models/song.model';
 import { MusicPlayerComponent } from '../../components/music-player/music-player.component';
+import { RatingWidgetComponent } from '../../ratings/rating-widget/rating-widget.component';
+import { CommentsSectionComponent } from '../../comments/components/comments-section/comments-section.component';
 import { AuthStateService } from '../../../../core/services/auth-state.service';
 import { FollowService } from '../../../../core/services/follow.service';
 
 @Component({
   selector: 'app-song-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, MusicPlayerComponent],
+  imports: [CommonModule, RouterModule, MusicPlayerComponent, RatingWidgetComponent, CommentsSectionComponent],
   templateUrl: './song-detail.component.html',
   styles: []
 })
@@ -32,6 +34,7 @@ export class SongDetailComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private songService: SongService,
     private playerService: MusicPlayerService,
     private artistService: ArtistService,
@@ -40,6 +43,8 @@ export class SongDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    
     const songId = this.route.snapshot.paramMap.get('id');
     if (songId) {
       this.loadSong(songId);
@@ -362,9 +367,8 @@ export class SongDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    const typeParam = this.route.snapshot.queryParamMap.get('type');
-    const targetType = typeParam === 'albums' ? 'albums' : 'songs';
-    this.router.navigate(['/explore'], { queryParams: { type: targetType } });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.location.back();
   }
 
   formatDuration(seconds: number): string {
@@ -422,5 +426,11 @@ export class SongDetailComponent implements OnInit, OnDestroy {
 
   get isCurrentSongPlaying(): boolean {
     return this.isCurrentSongSelected && this.isPlayerPlaying;
+  }
+
+  onCommentsCountChange(total: number): void {
+    if (this.song) {
+      this.song.totalComments = total;
+    }
   }
 }

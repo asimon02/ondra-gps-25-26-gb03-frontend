@@ -4,7 +4,7 @@
 @if (!isAuthenticated()) {
   <button
     (click)="accionAcceder()"
-    class="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md">
+    class="px-6 py-2.5 bg-white text-blue-700 font-medium rounded-lg border border-white/70 hover:bg-blue-50 transition-all duration-200 shadow-sm hover:shadow-md">
     Acceder
   </button>
 }
@@ -14,26 +14,26 @@
   <button
     #buttonRef
     (click)="toggleDropdown()"
-    class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-blue-200 transition-all duration-200 border border-transparent hover:border-blue-300">
+    class="flex items-center gap-3 px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20 hover:border-white/50">
 
     <!-- Foto de perfil o iniciales -->
     @if (userPhoto()) {
       <img
         [src]="userPhoto()"
         [alt]="displayName()"
-        class="w-10 h-10 rounded-full object-cover border-2 border-blue-600 shadow-sm">
+        class="w-10 h-10 rounded-full object-cover border-2 border-white/70 shadow-sm">
     } @else {
-      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-white flex items-center justify-center font-semibold text-sm shadow-sm">
+      <div class="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center font-semibold text-sm shadow-sm border border-white/50">
         {{ userInitials() }}
       </div>
     }
 
     <!-- Nombre del usuario (artístico si es artista) -->
-    <span class="font-medium text-gray-800 hidden md:inline">{{ displayName() }}</span>
+    <span class="font-medium text-white hidden md:inline drop-shadow">{{ displayName() }}</span>
 
     <!-- Icono dropdown -->
     <svg
-      class="w-5 h-5 text-gray-700 transition-transform duration-200"
+      class="w-5 h-5 text-white transition-transform duration-200"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24">
@@ -44,7 +44,7 @@
 
 <!-- Template del dropdown (se renderiza en el overlay) -->
 <ng-template #dropdownTemplate>
-  <div class="w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 animate-fade-in mt-2">
+  <div class="w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 animate-fade-in mt-2" [style.width.px]="buttonRef?.nativeElement?.offsetWidth">
     <!-- Información del usuario -->
     <div class="px-4 py-3 border-b border-gray-100">
       <p class="text-sm font-semibold text-gray-800">{{ displayName() }}</p>

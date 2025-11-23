@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AlbumService } from '../../../../core/services/album.service';
@@ -13,11 +13,13 @@ import { map, catchError, switchMap } from 'rxjs/operators';
 import { of, Observable } from 'rxjs';
 import { AuthStateService } from '../../../../core/services/auth-state.service';
 import { FollowService } from '../../../../core/services/follow.service';
+import { RatingWidgetComponent } from '../../ratings/rating-widget/rating-widget.component';
+import { CommentsSectionComponent } from '../../comments/components/comments-section/comments-section.component';
 
 @Component({
   selector: 'app-album-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, MusicPlayerComponent],
+  imports: [CommonModule, RouterModule, MusicPlayerComponent, RatingWidgetComponent, CommentsSectionComponent],
   templateUrl: './album-detail.component.html',
   styles: []
 })
@@ -36,6 +38,7 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private albumService: AlbumService,
     private songService: SongService,
     private playerService: MusicPlayerService,
@@ -45,6 +48,8 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    
     const albumId = this.route.snapshot.paramMap.get('id');
     if (albumId) {
       this.loadAlbum(albumId);
@@ -431,9 +436,8 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    const typeParam = this.route.snapshot.queryParamMap.get('type');
-    const targetType = typeParam === 'songs' ? 'songs' : 'albums';
-    this.router.navigate(['/explore'], { queryParams: { type: targetType } });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.location.back();
   }
 
   getTotalDuration(): number {
@@ -484,5 +488,11 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
 
   isTrackPlaying(trackId: string): boolean {
     return this.currentSongId === trackId && this.isPlayerPlaying;
+  }
+
+  onCommentsCountChange(total: number): void {
+    if (this.album) {
+      this.album.totalComments = total;
+    }
   }
 }
