@@ -1,0 +1,242 @@
+<!-- src/app/features/cart/components/checkout/checkout.component.html -->
+
+<div class="checkout-container">
+  <div class="checkout-header">
+    <h1 class="checkout-title">Finalizar Compra</h1>
+    <button class="btn-test-data" (click)="fillTestData()" type="button">
+      Rellenar datos de prueba
+    </button>
+  </div>
+
+  <!-- Indicador de pasos -->
+  <div class="steps-indicator">
+    <div class="step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
+      <div class="step-number">1</div>
+      <div class="step-label">Dirección de envío</div>
+    </div>
+    <div class="step-line" [class.completed]="currentStep > 1"></div>
+    <div class="step" [class.active]="currentStep === 2">
+      <div class="step-number">2</div>
+      <div class="step-label">Método de pago</div>
+    </div>
+  </div>
+
+  <div class="checkout-content">
+    <form [formGroup]="checkoutForm" class="checkout-form">
+      
+      <!-- PASO 1: Dirección de envío -->
+      @if (currentStep === 1) {
+        <div class="form-section">
+          <h2 class="section-title">Dirección de envío</h2>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nombre">Nombre *</label>
+              <input 
+                type="text" 
+                id="nombre" 
+                formControlName="nombre"
+                placeholder="Juan"
+                [class.error]="checkoutForm.get('nombre')?.touched && checkoutForm.get('nombre')?.invalid">
+              @if (checkoutForm.get('nombre')?.touched && checkoutForm.get('nombre')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('nombre') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="apellidos">Apellidos *</label>
+              <input 
+                type="text" 
+                id="apellidos" 
+                formControlName="apellidos"
+                placeholder="García López"
+                [class.error]="checkoutForm.get('apellidos')?.touched && checkoutForm.get('apellidos')?.invalid">
+              @if (checkoutForm.get('apellidos')?.touched && checkoutForm.get('apellidos')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('apellidos') }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="direccion">Dirección completa *</label>
+            <input 
+              type="text" 
+              id="direccion" 
+              formControlName="direccion"
+              placeholder="Calle Mayor 123, 3º B"
+              [class.error]="checkoutForm.get('direccion')?.touched && checkoutForm.get('direccion')?.invalid">
+            @if (checkoutForm.get('direccion')?.touched && checkoutForm.get('direccion')?.invalid) {
+              <span class="error-message">{{ getErrorMessage('direccion') }}</span>
+            }
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ciudad">Ciudad *</label>
+              <input 
+                type="text" 
+                id="ciudad" 
+                formControlName="ciudad"
+                placeholder="Madrid"
+                [class.error]="checkoutForm.get('ciudad')?.touched && checkoutForm.get('ciudad')?.invalid">
+              @if (checkoutForm.get('ciudad')?.touched && checkoutForm.get('ciudad')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('ciudad') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="codigoPostal">Código Postal *</label>
+              <input 
+                type="text" 
+                id="codigoPostal" 
+                formControlName="codigoPostal"
+                placeholder="28013"
+                maxlength="5"
+                [class.error]="checkoutForm.get('codigoPostal')?.touched && checkoutForm.get('codigoPostal')?.invalid">
+              @if (checkoutForm.get('codigoPostal')?.touched && checkoutForm.get('codigoPostal')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('codigoPostal') }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pais">País *</label>
+              <input 
+                type="text" 
+                id="pais" 
+                formControlName="pais"
+                placeholder="España"
+                [class.error]="checkoutForm.get('pais')?.touched && checkoutForm.get('pais')?.invalid">
+              @if (checkoutForm.get('pais')?.touched && checkoutForm.get('pais')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('pais') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="telefono">Teléfono *</label>
+              <input 
+                type="tel" 
+                id="telefono" 
+                formControlName="telefono"
+                placeholder="612345678"
+                maxlength="9"
+                [class.error]="checkoutForm.get('telefono')?.touched && checkoutForm.get('telefono')?.invalid">
+              @if (checkoutForm.get('telefono')?.touched && checkoutForm.get('telefono')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('telefono') }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="cancelCheckout()">
+              Cancelar
+            </button>
+            <button type="button" class="btn-primary" (click)="nextStep()">
+              Continuar al pago
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- PASO 2: Método de pago -->
+      @if (currentStep === 2) {
+        <div class="form-section">
+          <h2 class="section-title">Método de pago</h2>
+          
+          <div class="form-group">
+            <label for="numeroTarjeta">Número de tarjeta *</label>
+            <input 
+              type="text" 
+              id="numeroTarjeta" 
+              formControlName="numeroTarjeta"
+              placeholder="1234 5678 9012 3456"
+              maxlength="16"
+              [class.error]="checkoutForm.get('numeroTarjeta')?.touched && checkoutForm.get('numeroTarjeta')?.invalid">
+            @if (checkoutForm.get('numeroTarjeta')?.touched && checkoutForm.get('numeroTarjeta')?.invalid) {
+              <span class="error-message">{{ getErrorMessage('numeroTarjeta') }}</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="nombreTitular">Nombre del titular *</label>
+            <input 
+              type="text" 
+              id="nombreTitular" 
+              formControlName="nombreTitular"
+              placeholder="JUAN GARCIA LOPEZ"
+              style="text-transform: uppercase;"
+              [class.error]="checkoutForm.get('nombreTitular')?.touched && checkoutForm.get('nombreTitular')?.invalid">
+            @if (checkoutForm.get('nombreTitular')?.touched && checkoutForm.get('nombreTitular')?.invalid) {
+              <span class="error-message">{{ getErrorMessage('nombreTitular') }}</span>
+            }
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fechaExpiracion">Fecha de expiración *</label>
+              <input 
+                type="text" 
+                id="fechaExpiracion" 
+                formControlName="fechaExpiracion"
+                placeholder="MM/AA"
+                maxlength="5"
+                [class.error]="checkoutForm.get('fechaExpiracion')?.touched && checkoutForm.get('fechaExpiracion')?.invalid">
+              @if (checkoutForm.get('fechaExpiracion')?.touched && checkoutForm.get('fechaExpiracion')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('fechaExpiracion') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="cvv">CVV *</label>
+              <input 
+                type="text" 
+                id="cvv" 
+                formControlName="cvv"
+                placeholder="123"
+                maxlength="3"
+                [class.error]="checkoutForm.get('cvv')?.touched && checkoutForm.get('cvv')?.invalid">
+              @if (checkoutForm.get('cvv')?.touched && checkoutForm.get('cvv')?.invalid) {
+                <span class="error-message">{{ getErrorMessage('cvv') }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="previousStep()">
+              Volver
+            </button>
+            <button type="button" class="btn-primary" (click)="processPayment()">
+              Pagar {{ formatPrice(cartSummary().total) }}
+            </button>
+          </div>
+        </div>
+      }
+    </form>
+
+    <!-- Resumen del pedido -->
+    <div class="order-summary">
+      <h2 class="summary-title">Resumen del pedido</h2>
+      
+      <div class="summary-items">
+        @for (item of cartSummary().items; track item.id) {
+          <div class="summary-item">
+            <img [src]="item.imagen" [alt]="item.titulo" class="summary-item-image">
+            <div class="summary-item-info">
+              <p class="summary-item-title">{{ item.titulo }}</p>
+              <p class="summary-item-artist">{{ item.artista }}</p>
+            </div>
+            <span class="summary-item-price">{{ formatPrice(item.precio) }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="summary-divider"></div>
+      
+      <div class="summary-total">
+        <span>Total</span>
+        <span class="total-amount">{{ formatPrice(cartSummary().total) }}</span>
+      </div>
+    </div>
+  </div>
+</div>
