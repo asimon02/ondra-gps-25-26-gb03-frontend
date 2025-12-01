@@ -1,0 +1,27 @@
+// src/app/features/recomendaciones/recomendaciones-page.component.scss
+
+// Estilos adicionales si son necesarios
+// La mayoría de los estilos están usando Tailwind CSS en el template
+
+:host {
+  display: block;
+}
+
+// Animación suave para el spinner
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Transiciones suaves para los carruseles
+.bg-white {
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  }
+}

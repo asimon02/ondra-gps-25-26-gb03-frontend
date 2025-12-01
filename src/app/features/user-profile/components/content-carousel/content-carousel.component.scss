@@ -1,0 +1,28 @@
+// src/app/features/user-profile/components/content-carousel/content-carousel.component.scss
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;  /* Firefox */
+
+  &::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari y Opera */
+  }
+}
+
+/* Smooth scroll para navegadores que no lo soporten nativamente */
+@supports not (scroll-behavior: smooth) {
+  .scroll-smooth {
+    scroll-behavior: auto;
+  }
+}
+
+/* Animación de fade-in para los botones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

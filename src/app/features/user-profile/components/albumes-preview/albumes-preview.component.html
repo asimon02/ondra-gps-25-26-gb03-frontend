@@ -1,0 +1,16 @@
+<div *ngIf="!isLoading" class="h-full flex flex-col">
+  <app-content-carousel
+    [items]="albumes"
+    [title]="isOwnProfile ? 'Mis Álbumes' : 'Álbumes'"
+    icon="album"
+    [showAddButton]="isOwnProfile"
+    [showPlayButton]="false"
+    [emptyMessage]="isOwnProfile ? 'Aún no has subido ningún álbum' : 'Este artista aún no ha publicado álbumes'"
+    (addClick)="onAddAlbum()"
+    (itemClick)="onItemClick($event)">
+  </app-content-carousel>
+</div>
+
+<div *ngIf="isLoading" class="flex justify-center items-center py-8 h-full">
+  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+</div>

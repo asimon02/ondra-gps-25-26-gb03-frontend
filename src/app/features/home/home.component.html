@@ -1,0 +1,7 @@
+ <app-hero-section></app-hero-section>
+  <app-stats [stats]="stats()"></app-stats>
+  <app-trending-artists
+    [artistas]="artistas()"
+    [isLoading]="isLoading()"
+    [error]="errorArtistas()">
+  </app-trending-artists>

@@ -1,0 +1,172 @@
+<section class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center py-12 px-4">
+  <div class="w-full max-w-4xl">
+    <div class="bg-white rounded-2xl border border-blue-900 shadow-2xl p-8 md:p-12">
+
+      <!-- ============================================ -->
+      <!-- HEADER CON ICONO Y TÍTULO -->
+      <!-- ============================================ -->
+      <div class="text-center mb-8">
+        <div class="flex justify-center mb-6">
+          <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+            </svg>
+          </div>
+        </div>
+
+        <h1 class="text-3xl font-bold text-gray-900 mb-3">
+          ¡Bienvenido/a a OndraSounds!
+        </h1>
+
+        <p class="text-lg text-gray-600 mb-2">
+          Cuéntanos qué música te gusta
+        </p>
+
+        <p class="text-sm text-gray-500">
+          Selecciona tus géneros favoritos para recibir recomendaciones personalizadas
+        </p>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- MENSAJE DE ERROR -->
+      <!-- ============================================ -->
+      @if (errorMessage()) {
+        <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-sm text-red-800">{{ errorMessage() }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- ============================================ -->
+      <!-- LOADING: CARGANDO GÉNEROS -->
+      <!-- ============================================ -->
+      @if (generosLoading()) {
+        <div class="flex flex-col items-center justify-center py-12">
+          <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="text-gray-600 text-lg">Cargando géneros musicales...</p>
+        </div>
+      }
+
+      <!-- ============================================ -->
+      <!-- GRID DE GÉNEROS -->
+      <!-- ============================================ -->
+      @if (!generosLoading() && generos().length > 0) {
+        <div class="mb-8">
+          <!-- Header con contador -->
+          <div class="flex justify-between items-center mb-4">
+            <p class="text-sm font-medium text-gray-700">
+              Selecciona tus favoritos (mínimo 1)
+            </p>
+            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+              {{ generosSeleccionadosCount }} seleccionados
+            </span>
+          </div>
+
+          <!-- Grid de géneros musicales -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+            @for (genero of generos(); track genero.idGenero) {
+              <button
+                type="button"
+                (click)="toggleGenero(genero.idGenero)"
+                [class.bg-blue-600]="isGeneroSelected(genero.idGenero)"
+                [class.text-white]="isGeneroSelected(genero.idGenero)"
+                [class.border-blue-600]="isGeneroSelected(genero.idGenero)"
+                [class.shadow-lg]="isGeneroSelected(genero.idGenero)"
+                [class.scale-105]="isGeneroSelected(genero.idGenero)"
+                [class.bg-white]="!isGeneroSelected(genero.idGenero)"
+                [class.text-gray-700]="!isGeneroSelected(genero.idGenero)"
+                [class.border-gray-300]="!isGeneroSelected(genero.idGenero)"
+                class="px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center justify-center gap-2 min-h-[3rem]">
+
+                <!-- Icono de check cuando está seleccionado -->
+                @if (isGeneroSelected(genero.idGenero)) {
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                  </svg>
+                }
+
+                <span>{{ genero.nombreGenero }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- ============================================ -->
+          <!-- BOTONES DE ACCIÓN -->
+          <!-- ============================================ -->
+        <div class="flex flex-col sm:flex-row gap-4">
+          <!-- Botón Guardar -->
+          <button
+            type="button"
+            (click)="guardarPreferencias()"
+            [disabled]="isLoading() || generosSeleccionadosCount === 0"
+            class="flex-1 bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
+
+            @if (isLoading()) {
+              <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Guardando...</span>
+            } @else {
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Guardar y Continuar</span>
+            }
+          </button>
+
+          <!-- Botón Omitir -->
+          <button
+            type="button"
+            (click)="omitirPaso()"
+            [disabled]="isLoading()"
+            class="flex-1 sm:flex-initial sm:px-8 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+            Omitir por ahora
+          </button>
+        </div>
+      }
+
+      <!-- ============================================ -->
+      <!-- ERROR: NO SE PUDIERON CARGAR GÉNEROS -->
+      <!-- ============================================ -->
+      @if (!generosLoading() && generos().length === 0) {
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+
+          <p class="text-gray-600 mb-4 text-lg">No se pudieron cargar los géneros</p>
+
+          <button
+            (click)="reintentar()"
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md hover:shadow-lg">
+            <span class="flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              Reintentar
+            </span>
+          </button>
+
+          <p class="mt-6 text-sm text-gray-500">
+            O puedes
+            <button
+              (click)="omitirPaso()"
+              class="text-blue-600 hover:text-blue-800 font-medium underline">
+              omitir este paso
+            </button>
+          </p>
+        </div>
+      }
+
+    </div>
+  </div>
+</section>

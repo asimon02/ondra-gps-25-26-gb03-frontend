@@ -1,0 +1,16 @@
+<div class="min-h-screen flex flex-col">
+  <app-header></app-header>
+
+  <main class="flex-grow">
+    <router-outlet></router-outlet>
+  </main>
+
+  <app-footer></app-footer>
+
+  <!-- Music Player Global (fixed bottom) -->
+  <app-music-player
+    [isVisible]="showPlayer"
+    (close)="onClosePlayer()"
+    (toggleFavorite)="onPlayerToggleFavorite($event)"
+  ></app-music-player>
+</div>

@@ -1,0 +1,48 @@
+<section class="flex justify-center items-center gap-10 py-20 px-10 max-w-screen-2xl w-full mx-auto">
+  <!-- Bloque del logo, texto y botón -->
+  <div class="bg-blue-50 p-10 flex flex-col items-center justify-center text-center gap-8 w-fit h-fit border border-blue-200 rounded-lg shadow-sm">
+    <img
+      class="w-60 object-contain"
+      src="assets/logos/logo1.png"
+      alt="Logo OndraSounds"
+    >
+
+    <p class="text-lg max-w-md text-balance">
+      Explora, descubre y apoya a tus artistas favoritos en una plataforma hecha para músicos emergentes y amantes del sonido auténtico.
+    </p>
+
+    <button
+      (click)="handleMainAction()"
+      class="bg-blue-600 hover:bg-blue-700 px-6 py-3 text-white text-md font-medium rounded-lg flex items-center gap-3 transition-all duration-150"
+    >
+      {{ authState.isAuthenticated() ? 'Ir a mi perfil' : 'Únete ahora' }}
+      <mat-icon>arrow_outward</mat-icon>
+    </button>
+  </div>
+
+  <!-- BLOQUE DE BANNERS APILADOS VISIBLES -->
+  <div class="relative flex justify-center items-center w-[520px] h-[360px] overflow-visible">
+    <ng-container *ngFor="let banner of banners; let i = index">
+      <img
+        [src]="banner.src"
+        [alt]="banner.alt"
+        [ngStyle]="getBannerStyle(i)"
+        class="absolute object-cover border border-blue-900 rounded-md shadow-lg transition-all duration-700 ease-in-out"
+      />
+    </ng-container>
+
+    <!-- Texto sobre el banner frontal -->
+    <div class="absolute bottom-0 right-0 w-full bg-gradient-to-t from-black/70 to-transparent text-white p-4 flex flex-col items-end gap-2 rounded-b-md z-30">
+      <p class="text-sm sm:text-base text-end leading-snug">
+        Descubre todos los álbumes y sencillos de nuestros artistas destacados.
+      </p>
+      <button
+        [routerLink]="['/explorar']"
+        class="px-4 py-2 text-white hover:underline cursor-pointer text-sm"
+      >
+        Explorar música
+      </button>
+    </div>
+  </div>
+
+</section>

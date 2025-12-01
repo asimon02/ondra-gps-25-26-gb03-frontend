@@ -1,0 +1,55 @@
+<!-- Backdrop -->
+<div
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+  (click)="onBackdropClick($event)">
+
+  <!-- Modal -->
+  <div class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+      <h2 class="text-xl font-bold text-gray-900">{{ title }}</h2>
+      <button
+        (click)="close()"
+        class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Lista de usuarios (con scroll) -->
+    <div
+      *ngIf="!isLoading && usuarios.length > 0"
+      class="flex-1 overflow-y-auto p-4">
+      <div class="space-y-2">
+        <app-user-card
+          *ngFor="let usuario of usuarios"
+          [usuario]="usuario"
+          [siguiendo]="isSiguiendo(usuario.idUsuario)"
+          [currentUserId]="currentUserId"
+          [currentUserTipoUsuario]="currentUserTipoUsuario"
+          (followStatusChanged)="onFollowStatusChanged()"
+          (profileClick)="close()">
+        </app-user-card>
+      </div>
+    </div>
+
+    <!-- Sin usuarios -->
+    <div
+      *ngIf="!isLoading && usuarios.length === 0"
+      class="flex flex-col items-center justify-center py-12 text-neutral">
+      <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+      </svg>
+      <p *ngIf="modalType === 'seguidos'">Aún no sigues a nadie</p>
+      <p *ngIf="modalType === 'seguidores'">Aún no tienes seguidores</p>
+    </div>
+
+  </div>
+</div>

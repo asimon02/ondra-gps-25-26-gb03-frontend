@@ -1,0 +1,15 @@
+<div *ngIf="!isLoading" class="h-full flex flex-col">
+  <app-content-carousel
+    [items]="favoritos"
+    [icon]="'favorite'"
+    [title]="isOwnProfile ? 'Mis Favoritos' : 'Contenido favorito'"
+    [showAddButton]="false"
+    [showPlayButton]="false"
+    [emptyMessage]="isOwnProfile ? 'Aún no tienes canciones o álbumes favoritos' : 'Este usuario no tiene contenido favorito público'"
+    (itemClick)="onItemClick($event)">
+  </app-content-carousel>
+</div>
+
+<div *ngIf="isLoading" class="flex justify-center items-center py-8 h-full">
+  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+</div>

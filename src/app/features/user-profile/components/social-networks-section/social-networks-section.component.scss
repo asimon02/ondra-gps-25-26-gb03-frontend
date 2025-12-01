@@ -1,0 +1,326 @@
+// src/app/features/user-profile/components/social-networks-section/social-networks-section.component.scss
+
+// ==================== ANIMACIONES ====================
+
+// Animación para entrada de elementos
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Animación para modales - fade
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Animación para modales - scale
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Spinner de carga
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ==================== COMPONENTE ====================
+
+:host {
+  display: block;
+}
+
+// ==================== ELEMENTOS GENERALES ====================
+
+// Animación de carga
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+// Animación para items de la lista
+.space-y-3 > * {
+  animation: slideIn 0.3s ease-out;
+  animation-fill-mode: both;
+
+  &:nth-child(1) { animation-delay: 0.05s; }
+  &:nth-child(2) { animation-delay: 0.1s; }
+  &:nth-child(3) { animation-delay: 0.15s; }
+  &:nth-child(4) { animation-delay: 0.2s; }
+  &:nth-child(5) { animation-delay: 0.25s; }
+}
+
+// ==================== MODALES ====================
+
+// Modal overlay
+.fixed {
+  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(2px);
+
+  // Modal content
+  > div {
+    animation: scaleIn 0.2s ease-out;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+// ==================== BOTONES ====================
+
+button {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  // Efecto ripple
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  &:active {
+    transform: scale(0.98);
+
+    &::before {
+      width: 200px;
+      height: 200px;
+    }
+  }
+
+  // Hover effects específicos
+  &:hover {
+    &:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  // Disabled state
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ==================== INPUTS Y SELECTS ====================
+
+input, select {
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+  }
+
+  &:hover:not(:focus) {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+// ==================== TARJETAS DE REDES SOCIALES ====================
+
+.bg-gray-50 {
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+
+// ==================== ENLACES ====================
+
+a {
+  position: relative;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  // Efecto de subrayado animado
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: currentColor;
+    transition: width 0.3s ease;
+  }
+
+  &:hover::after {
+    width: 100%;
+  }
+}
+
+// ==================== ICONOS ====================
+
+svg {
+  transition: all 0.2s ease;
+}
+
+// Iconos en botones
+button svg {
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+// ==================== BADGES Y ETIQUETAS ====================
+
+.text-pink-600,
+.text-blue-600,
+.text-red-600,
+.text-green-600,
+.text-orange-600 {
+  filter: brightness(1);
+  transition: filter 0.2s ease;
+
+  &:hover {
+    filter: brightness(1.2);
+  }
+}
+
+// ==================== ESTADOS DE CARGA ====================
+
+.loading-skeleton {
+  background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// ==================== RESPONSIVE ====================
+
+// Tablets
+@media (max-width: 768px) {
+  .fixed > div {
+    max-width: 90vw;
+  }
+
+  button {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
+// Móviles
+@media (max-width: 640px) {
+  .fixed > div {
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 1rem;
+  }
+
+  // Ajustar spacing en móviles
+  .space-y-4 > * + * {
+    margin-top: 0.75rem;
+  }
+
+  // Botones más pequeños en móvil
+  button {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  // Iconos más pequeños
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// ==================== ACCESIBILIDAD ====================
+
+// Focus visible para navegación por teclado
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+// Reducir animaciones si el usuario lo prefiere
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// ==================== TEMAS OSCUROS (opcional) ====================
+
+@media (prefers-color-scheme: dark) {
+  // Aquí puedes añadir estilos para tema oscuro si lo necesitas
+  // Por ejemplo:
+  // .bg-white { background-color: #1f2937; }
+  // .text-gray-900 { color: #f9fafb; }
+}
+
+// ==================== UTILIDADES PERSONALIZADAS ====================
+
+// Gradientes personalizados
+.gradient-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+}
+
+.gradient-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+// Sombras personalizadas
+.shadow-soft {
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-strong {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}

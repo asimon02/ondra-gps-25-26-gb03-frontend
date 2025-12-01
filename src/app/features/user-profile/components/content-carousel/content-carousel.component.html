@@ -1,0 +1,148 @@
+<div>
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <!-- Iconos según tipo -->
+      <ng-container [ngSwitch]="icon">
+        <!-- Icono de Álbum -->
+        <svg *ngSwitchCase="'album'" class="w-7 h-7 text-primary flex-shrink-0 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+        </svg>
+
+        <!-- Icono de Canción -->
+        <svg *ngSwitchCase="'song'" class="w-7 h-7 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+        </svg>
+
+        <!-- Icono de Compras -->
+        <svg *ngSwitchCase="'purchase'" class="w-7 h-7 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+
+        <!-- Icono de Favoritos -->
+        <svg *ngSwitchCase="'favorite'" class="w-7 h-7 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+        </svg>
+      </ng-container>
+
+      <h2 class="text-xl font-semibold text-gray-900">{{ title }} ({{ items.length }})</h2>
+    </div>
+
+    <!-- Botón Añadir (solo para artistas) -->
+    <button
+      *ngIf="showAddButton"
+      (click)="onAddClick()"
+      class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Añadir
+    </button>
+  </div>
+
+  <!-- Carrusel -->
+  <div class="relative group" *ngIf="items.length > 0">
+
+    <!-- Botón Izquierda -->
+    <button
+      *ngIf="canScrollLeft()"
+      (click)="scrollLeft()"
+      class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 hover:bg-white shadow-lg rounded-full p-3 transition-all opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0">
+      <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </button>
+
+    <!-- Contenedor Scrolleable -->
+    <div
+      #scrollContainer
+      (scroll)="onScroll()"
+      class="flex gap-4 overflow-x-auto scroll-smooth scrollbar-hide pb-4"
+      style="scroll-snap-type: x proximity;">
+
+      <div
+        *ngFor="let item of items"
+        (click)="onItemClick(item)"
+        class="flex-none w-56 cursor-pointer group/item"
+        style="scroll-snap-align: start;">
+
+        <!-- Imagen -->
+        <div class="relative w-56 h-56 bg-gray-200 rounded-lg overflow-hidden mb-3 group-hover/item:shadow-xl transition-shadow">
+          <img
+            *ngIf="item.imagen"
+            [src]="item.imagen"
+            [alt]="item.nombre"
+            class="w-full h-full object-cover transition-transform duration-300 group-hover/item:scale-110"
+            (error)="$any($event.target).src = getDefaultImage()">
+
+          <div
+            *ngIf="!item.imagen"
+            class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-50">
+            <svg class="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+            </svg>
+          </div>
+
+          <!-- Overlay con play -->
+          <div *ngIf="showPlayButton" class="absolute inset-0 bg-black/40 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center justify-center">
+            <button
+              (click)="onPlayClick($event, item)"
+              class="bg-primary text-white rounded-full p-3 transform scale-90 group-hover/item:scale-100 transition-transform shadow-lg hover:bg-blue-700"
+              [attr.aria-label]="'Reproducir ' + item.nombre"
+              [attr.title]="'Reproducir ' + item.nombre">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="space-y-1">
+          <p class="font-medium text-gray-900 truncate group-hover/item:text-primary transition-colors">
+            {{ item.nombre }}
+          </p>
+          <p *ngIf="item.artista" class="text-sm text-neutral truncate">
+            {{ item.artista }}
+          </p>
+          <p *ngIf="item.precio !== undefined" class="text-sm font-semibold text-gray-900">
+            {{ formatPrice(item.precio) }}
+          </p>
+          <p *ngIf="item.tipo" class="text-xs text-neutral capitalize">
+            {{ item.tipo }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón Derecha -->
+    <button
+      *ngIf="canScrollRight()"
+      (click)="scrollRight()"
+      class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 hover:bg-white shadow-lg rounded-full p-3 transition-all opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
+      <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mensaje vacío -->
+  <div
+    *ngIf="items.length === 0"
+    class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+    </svg>
+    <p class="text-neutral font-medium">{{ emptyMessage }}</p>
+
+    <button
+      *ngIf="showAddButton"
+      (click)="onAddClick()"
+      class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Añadir primero
+    </button>
+  </div>
+</div>

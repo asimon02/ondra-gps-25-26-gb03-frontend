@@ -1,0 +1,63 @@
+# Angular
+/dist
+/tmp
+/out-tsc
+/bazel-out
+/.angular/cache
+.sass-cache/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.launch
+*.sublime-workspace
+.project
+.classpath
+.c9/
+.settings/
+.history/
+
+# Environment
+.env
+.env.local
+environment.*.ts
+!environment.ts
+!environment.prod.ts
+
+# Testing
+/coverage
+/.nyc_output
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings
+
+# Logs
+*.log
+logs/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Documentación generada
+/docs
+/documentation
+/dist-docs
+
+# JSDoc/Compodoc
+.compodoc
+
+# TypeDoc
+/typedoc-out
+
+*.jsdoc.cache

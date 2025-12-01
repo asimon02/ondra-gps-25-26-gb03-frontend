@@ -1,0 +1,335 @@
+<div class="min-h-screen bg-blue-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header con botón Volver -->
+    <div class="mb-6">
+      <app-back-button class="mb-6"></app-back-button>
+    </div>
+
+    <!-- Título -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Pasarela de Pago</h1>
+      <p class="text-gray-600 mt-2">Completa los datos para finalizar tu compra</p>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Contenido -->
+    <div *ngIf="!isLoading && carrito" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Formulario de pago -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-6">Información de Pago</h2>
+
+          <!-- Métodos guardados -->
+          <div *ngIf="metodosPagoGuardados.length > 0" class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Selecciona un método de pago</h3>
+
+            <div class="space-y-3">
+              <div
+                *ngFor="let metodo of metodosPagoGuardados"
+                (click)="seleccionarMetodo(metodo.idMetodoPago)"
+                class="border-2 rounded-lg p-4 cursor-pointer transition-all"
+                [class.border-primary]="metodoSeleccionado === metodo.idMetodoPago"
+                [class.bg-blue-50]="metodoSeleccionado === metodo.idMetodoPago"
+                [class.border-gray-200]="metodoSeleccionado !== metodo.idMetodoPago"
+                [class.hover:border-primary]="metodoSeleccionado !== metodo.idMetodoPago"
+              >
+                <div class="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    [checked]="metodoSeleccionado === metodo.idMetodoPago"
+                    [id]="'metodo-' + metodo.idMetodoPago"
+                    class="w-4 h-4 text-primary"
+                  />
+                  <div class="flex-1">
+                    <p class="font-semibold text-gray-900 capitalize">{{ metodo.tipo }}</p>
+                    <p class="text-sm text-gray-600" *ngIf="metodo.numeroTarjeta">
+                      •••• {{ metodo.numeroTarjeta.slice(-4) }}
+                    </p>
+                    <p class="text-xs text-gray-500">{{ metodo.propietario }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              (click)="mostrarNuevoMetodo()"
+              class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+              Añadir nuevo método de pago
+            </button>
+          </div>
+
+          <!-- Formulario nuevo método -->
+          <form *ngIf="mostrarFormularioNuevo" (ngSubmit)="procesarPago()" class="space-y-6">
+            <!-- Botón volver a métodos guardados -->
+            <app-back-button
+              *ngIf="metodosPagoGuardados.length > 0"
+              label="Volver a métodos guardados"
+              class="mb-4"
+            ></app-back-button>
+
+            <!-- Datos de la tarjeta -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">Datos de la tarjeta</h3>
+
+              <div class="space-y-4">
+                <!-- Número de tarjeta -->
+                <div>
+                  <label for="cardNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                    Número de tarjeta *
+                  </label>
+                  <input
+                    type="text"
+                    id="cardNumber"
+                    [(ngModel)]="paymentData.cardNumber"
+                    name="cardNumber"
+                    (input)="formatCardNumber()"
+                    placeholder="1234 5678 9012 3456"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <!-- Nombre del titular -->
+                <div>
+                  <label for="cardName" class="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre del titular
+                  </label>
+                  <input
+                    type="text"
+                    id="cardName"
+                    [(ngModel)]="paymentData.cardName"
+                    name="cardName"
+                    placeholder="Juan Pérez"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <!-- Fecha de expiración y CVV -->
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha de expiración
+                    </label>
+                    <input
+                      type="text"
+                      id="expiryDate"
+                      [(ngModel)]="paymentData.expiryDate"
+                      name="expiryDate"
+                      (input)="formatExpiryDate()"
+                      placeholder="MM/AA"
+                      maxlength="5"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="cvv" class="block text-sm font-medium text-gray-700 mb-1">
+                      CVV
+                    </label>
+                    <input
+                      type="text"
+                      id="cvv"
+                      [(ngModel)]="paymentData.cvv"
+                      name="cvv"
+                      (input)="formatCVV()"
+                      placeholder="123"
+                      maxlength="4"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Información de facturación -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">Información de facturación</h3>
+
+              <div class="space-y-4">
+                <!-- Email -->
+                <div>
+                  <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    [(ngModel)]="paymentData.email"
+                    name="email"
+                    placeholder="ejemplo@correo.com"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <!-- Dirección -->
+                <div>
+                  <label for="address" class="block text-sm font-medium text-gray-700 mb-1">
+                    Dirección (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    [(ngModel)]="paymentData.address"
+                    name="address"
+                    placeholder="Calle Principal 123"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+
+                <!-- Ciudad y Código Postal -->
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
+                      Ciudad (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      [(ngModel)]="paymentData.city"
+                      name="city"
+                      placeholder="Madrid"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label for="postalCode" class="block text-sm font-medium text-gray-700 mb-1">
+                      Código Postal (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      id="postalCode"
+                      [(ngModel)]="paymentData.postalCode"
+                      name="postalCode"
+                      placeholder="28001"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Checkbox para guardar método -->
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="guardarMetodo"
+                [(ngModel)]="guardarMetodo"
+                name="guardarMetodo"
+                class="w-4 h-4 text-primary rounded"
+              />
+              <label for="guardarMetodo" class="text-sm text-gray-700 cursor-pointer">
+                Guardar este método para futuras compras
+              </label>
+            </div>
+
+            <!-- Botón de pago -->
+            <div class="pt-4">
+              <button
+                type="submit"
+                [disabled]="isProcessing"
+                class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span *ngIf="!isProcessing">Confirmar pago</span>
+                <span *ngIf="isProcessing" class="flex items-center justify-center gap-2">
+                  <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Procesando...
+                </span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Botón de pago con método guardado -->
+          <div *ngIf="metodoSeleccionado" class="mt-6">
+            <button
+              type="button"
+              (click)="procesarPago()"
+              [disabled]="isProcessing"
+              class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span *ngIf="!isProcessing">Confirmar pago</span>
+              <span *ngIf="isProcessing" class="flex items-center justify-center gap-2">
+                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Procesando...
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen del pedido -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-md p-6 sticky top-24">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Resumen del pedido</h2>
+
+          <!-- Items del carrito -->
+          <div class="space-y-3 mb-4 max-h-60 overflow-y-auto">
+            <div
+              *ngFor="let item of carrito.items"
+              class="flex gap-3 pb-3 border-b border-gray-200 last:border-0"
+            >
+              <img
+                [src]="item.urlPortada"
+                [alt]="item.titulo"
+                class="w-12 h-12 rounded object-cover"
+              />
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 truncate">{{ item.titulo }}</p>
+                <p class="text-xs text-gray-500 truncate">{{ item.nombreArtistico }}</p>
+                <p class="text-sm font-bold text-primary mt-1">{{ item.precio | currency:'EUR':'symbol':'1.2-2' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Totales -->
+          <div class="space-y-3 pt-4 border-t border-gray-200">
+            <div class="flex justify-between text-gray-600">
+              <span>Subtotal</span>
+              <span>{{ carrito.precioTotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between text-gray-600">
+              <span>Items</span>
+              <span>{{ carrito.cantidadItems }}</span>
+            </div>
+            <div class="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-900">
+              <span>Total a pagar</span>
+              <span>{{ carrito.precioTotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <!-- Información de seguridad -->
+          <div class="mt-6 pt-6 border-t border-gray-200">
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+              <span>Pago seguro y encriptado</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<app-add-payment-method-modal
+  *ngIf="mostrarModalMetodo"
+  (closeModal)="onCloseModalMetodo()"
+  (metodoCreado)="onMetodoCreado()"
+></app-add-payment-method-modal>

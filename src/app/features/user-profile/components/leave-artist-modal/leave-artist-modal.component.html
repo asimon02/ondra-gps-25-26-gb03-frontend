@@ -1,0 +1,176 @@
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in"
+     (click)="close()">
+
+  <div class="bg-white rounded-2xl shadow-2xl border-2 border-blue-900 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+       (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl z-10">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Dejar de ser Artista</h2>
+          <p class="text-sm text-gray-600 mt-1">Elige una de las siguientes opciones</p>
+        </div>
+        <button
+          type="button"
+          (click)="close()"
+          class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6">
+
+      <!-- Mensaje de Error -->
+      @if (errorMessage()) {
+        <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-sm text-red-800 font-medium">{{ errorMessage() }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- PASO 1: Selección de Opción -->
+      @if (currentStep() === 'seleccion') {
+        <div class="space-y-4">
+
+          <!-- Opción 1: Seguir como Usuario -->
+          <button
+            type="button"
+            (click)="seleccionarOpcion('seguir_usuario')"
+            class="w-full text-left p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group">
+
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Continuar como Usuario</h3>
+                <p class="text-sm text-gray-600">
+                  Deja de ser artista pero mantén tu cuenta de usuario activa
+                </p>
+              </div>
+
+              <svg class="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </button>
+
+          <!-- Opción 2: Eliminar Cuenta -->
+          <button
+            type="button"
+            (click)="seleccionarOpcion('eliminar_cuenta')"
+            class="w-full text-left p-6 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group">
+
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-red-200 transition-colors">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </div>
+
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Eliminar cuenta completamente</h3>
+                <p class="text-sm text-gray-600">
+                  Elimina permanentemente tu cuenta y toda tu información
+                </p>
+              </div>
+
+              <svg class="w-6 h-6 text-gray-400 group-hover:text-red-600 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </button>
+
+        </div>
+      }
+
+      <!-- PASO 2: Confirmación -->
+      @if (currentStep() === 'confirmacion') {
+        <div class="space-y-6">
+
+          <!-- Resumen de la acción -->
+          <div [class]="'p-6 rounded-xl border-2 ' +
+            (opcionSeleccionada() === 'seguir_usuario'
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-red-50 border-red-200')">
+
+            <div class="flex items-start gap-4">
+              <div [class]="'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ' +
+                (opcionSeleccionada() === 'seguir_usuario' ? 'bg-blue-200' : 'bg-red-200')">
+                @if (opcionSeleccionada() === 'seguir_usuario') {
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                } @else {
+                  <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                }
+              </div>
+
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ getOpcionTitulo() }}</h3>
+                <p [class]="'text-sm font-medium ' +
+                  (opcionSeleccionada() === 'seguir_usuario' ? 'text-blue-800' : 'text-red-800')">
+                  {{ getOpcionDescripcion() }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Confirmación final -->
+          <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <p class="text-sm text-gray-700 text-center font-medium">
+              ¿Estás seguro de que deseas continuar?
+            </p>
+          </div>
+
+          <!-- Botones -->
+          <div class="flex gap-3">
+            <app-back-button
+              class="flex-1"
+              [block]="true"
+              [disabled]="isSubmitting()"
+              [disableAutoNav]="true"
+              (back)="volverPasoAnterior()"
+            ></app-back-button>
+
+            <button
+              type="button"
+              (click)="confirmarAccion()"
+              [disabled]="isSubmitting()"
+              [class]="'flex-1 px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ' +
+                (opcionSeleccionada() === 'seguir_usuario'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-red-600 text-white hover:bg-red-700')">
+              @if (isSubmitting()) {
+                <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Procesando...</span>
+              } @else {
+                <span>Confirmar</span>
+              }
+            </button>
+          </div>
+
+        </div>
+      }
+
+    </div>
+
+  </div>
+</div>

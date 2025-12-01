@@ -1,0 +1,237 @@
+<div class="min-h-screen bg-blue-50">
+  <div class="container mx-auto px-4 pb-12 max-w-7xl">
+    <div class="pt-6">
+      <app-back-button class="mb-6"></app-back-button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center min-h-[400px]">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Profile Content -->
+    <div *ngIf="!isLoading && userProfile">
+
+    <!-- Layout de 2 columnas: Profile Header (izq) + Info Personal (der) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Columna Izquierda: Profile Header -->
+      <div class="lg:col-span-1 flex">
+        <app-profile-header
+          class="w-full"
+          [userProfile]="userProfile"
+          [estadisticas]="estadisticas"
+          [isOwnProfile]="true"
+          [isPublicView]="false"
+          [totalReproducciones]="totalReproducciones"
+          (openModalEvent)="openModal($event)"
+          (profileUpdated)="onProfileUpdated($event)">
+        </app-profile-header>
+      </div>
+
+      <!-- Columna Derecha: Información Personal -->
+      <div class="lg:col-span-2 flex">
+        <app-personal-info-section
+          class="w-full"
+          [userProfile]="userProfile"
+          (profileUpdated)="onProfileUpdated($event)">
+        </app-personal-info-section>
+      </div>
+    </div>
+
+    <!-- Redes Sociales (solo para artistas en su propio perfil) -->
+    <div
+      *ngIf="isArtist && userProfile.idArtista"
+      class="mb-6">
+      <div class="bg-white rounded-lg shadow-sm p-6 border border-blue-900">
+        <app-social-networks-section
+          [artistaId]="userProfile.idArtista">
+        </app-social-networks-section>
+      </div>
+    </div>
+
+    <!-- Resto del contenido en ancho completo -->
+    <div class="space-y-6">
+
+      <!-- Grid de Gestión: Perfil Artista (izq) y Pagos (der) - solo para artistas -->
+      <div *ngIf="isArtist" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Gestión de Perfil de Artista (mismo ancho que profile-header) -->
+        <div class="lg:col-span-1 flex">
+          <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6 flex flex-col justify-between w-full">
+            <div class="mb-4">
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">
+                Gestión de Perfil de Artista
+              </h2>
+              <p class="text-gray-600">
+                Si deseas dejar de ser artista o eliminar tu cuenta
+              </p>
+            </div>
+            <button
+              (click)="abrirLeaveArtistModal()"
+              class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+              Gestionar
+            </button>
+          </div>
+        </div>
+
+        <!-- Métodos de Cobro (mismo ancho que personal-info) -->
+        <div class="lg:col-span-2 flex">
+          <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6 flex flex-col justify-between w-full">
+            <div class="mb-4">
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">Métodos de Cobro</h2>
+              <p class="text-gray-600">Administra tus métodos de cobro y consulta tus ingresos</p>
+            </div>
+            <button
+              (click)="navegarAPagos()"
+              class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+              </svg>
+              Gestionar Cobros
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Grid de Gestión: Conviértete en Artista (izq) y Pagos (der) - solo para usuarios normales -->
+      <div *ngIf="!isArtist" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Conviértete en Artista (mismo ancho que profile-header) -->
+        <div class="lg:col-span-1 flex">
+          <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6 flex flex-col justify-between w-full">
+            <div class="mb-4">
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">
+                Conviértete en Artista
+              </h2>
+              <p class="text-gray-600">
+                Comparte tu música con el mundo y llega a miles de oyentes
+              </p>
+            </div>
+            <button
+              (click)="abrirBecomeArtistModal()"
+              class="w-full flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+              </svg>
+              Comenzar
+            </button>
+          </div>
+        </div>
+
+        <!-- Métodos de Pago (mismo ancho que personal-info) -->
+        <div class="lg:col-span-2 flex">
+          <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6 flex flex-col justify-between w-full">
+            <div class="mb-4">
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">Métodos de Pago</h2>
+              <p class="text-gray-600">Administra tus métodos de pago y consulta tu historial</p>
+            </div>
+            <button
+              (click)="navegarAPagos()"
+              class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+              </svg>
+              Gestionar Pagos
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================ -->
+      <!-- CONTENIDO PARA USUARIO NORMAL -->
+      <!-- ============================================ -->
+      <ng-container *ngIf="!isArtist">
+        <!-- Compras -->
+        <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+          <app-purchases-preview [userId]="userProfile.idUsuario"></app-purchases-preview>
+        </div>
+
+        <!-- Favoritos -->
+        <!-- En la sección de favoritos para usuario normal -->
+        <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+          <app-favorites-preview
+            [userId]="userProfile.idUsuario"
+            [isOwnProfile]="true">
+          </app-favorites-preview>
+        </div>
+      </ng-container>
+
+      <!-- ============================================ -->
+      <!-- CONTENIDO PARA ARTISTA -->
+      <!-- ============================================ -->
+      <ng-container *ngIf="isArtist">
+        <!-- Canciones -->
+        <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+          <app-canciones-preview
+            [artistaId]="userProfile.idArtista"
+            [nombreArtista]="userProfile.nombreArtistico"
+            [isOwnProfile]="true">
+          </app-canciones-preview>
+        </div>
+
+        <!-- Álbumes -->
+        <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+          <app-albumes-preview
+            [artistaId]="userProfile.idArtista"
+            [nombreArtista]="userProfile.nombreArtistico"
+            [isOwnProfile]="true">
+          </app-albumes-preview>
+        </div>
+      </ng-container>
+
+      <!-- ============================================ -->
+      <!-- BOTÓN DE PREFERENCIAS MUSICALES - ANCHO COMPLETO -->
+      <!-- ============================================ -->
+      <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+        <div class="flex flex-col gap-4">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
+              Preferencias Musicales
+            </h2>
+            <p class="text-gray-600">
+              Personaliza tu experiencia seleccionando tus géneros favoritos para recibir mejores recomendaciones
+            </p>
+          </div>
+          <button
+            (click)="navegarAPreferencias()"
+            class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+            </svg>
+            Configurar Mis Preferencias Musicales
+          </button>
+        </div>
+      </div>
+
+    </div> <!-- Cierre de space-y-6 -->
+    </div> <!-- Cierre de space-y-6 -->
+  </div> <!-- Cierre de container -->
+
+  <!-- Modal de Seguidos/Seguidores -->
+  <app-followers-modal
+    *ngIf="modalType && userProfile"
+    [modalType]="modalType"
+    [userId]="userProfile.idUsuario"
+    (closeModal)="closeModal()"
+    (statsUpdated)="recargarEstadisticas()">
+  </app-followers-modal>
+
+  <!-- Modal de Dejar de ser Artista -->
+  <app-leave-artist-modal
+    *ngIf="mostrarLeaveArtistModal"
+    (closeModal)="cerrarLeaveArtistModal()"
+    (artistLeft)="onArtistLeft()">
+  </app-leave-artist-modal>
+
+  <!-- Modal de Convertirse en Artista -->
+  <app-become-artist-modal
+    *ngIf="mostrarBecomeArtistModal"
+    (closeModal)="cerrarBecomeArtistModal()"
+    (artistaCreado)="onArtistCreated($event)">
+  </app-become-artist-modal>
+</div>

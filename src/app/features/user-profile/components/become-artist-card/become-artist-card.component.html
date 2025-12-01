@@ -1,0 +1,43 @@
+<div class="bg-gradient-to-r from-primary to-secondary rounded-lg shadow-sm p-8 text-white">
+  <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+
+    <!-- Contenido -->
+    <div class="flex-1 space-y-3">
+      <div class="flex items-center gap-2">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+        <h3 class="text-2xl font-bold">¿Eres músico?</h3>
+      </div>
+
+      <p class="text-white/90 text-lg">
+        Comparte tu talento con millones de oyentes
+      </p>
+
+      <p class="text-white/80">
+        Sube tus canciones, álbumes y conecta con fans de todo el mundo.
+        Empieza tu carrera musical hoy mismo.
+      </p>
+    </div>
+
+    <!-- Botón CTA -->
+    <div class="flex-shrink-0">
+      <button
+        (click)="openModal()"
+        class="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+        Convertirme en artista
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<app-become-artist-modal
+  *ngIf="showModal()"
+  (closeModal)="closeModal()"
+  (artistaCreado)="onArtistaCreado()">
+</app-become-artist-modal>
