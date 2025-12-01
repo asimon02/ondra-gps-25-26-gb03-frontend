@@ -14,6 +14,10 @@ import {
 } from '../models/song.model';
 import { EstadisticasArtistaDTO } from '../../albums/models/album.model';
 
+/**
+ * Servicio para gestión de canciones, incluyendo operaciones de búsqueda,
+ * creación, actualización, eliminación y registro de reproducciones.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -22,8 +26,9 @@ export class SongService {
   private apiUrl = `${environment.apis.contenidos}/canciones`;
 
   /**
-   * GET /api/canciones
-   * Lista canciones con filtros y paginación
+   * Lista canciones con filtros opcionales y paginación.
+   * @param filtros Objeto con filtros y opciones de paginación
+   * @returns Observable con datos paginados de canciones
    */
   listarCanciones(filtros?: {
     artistId?: number;
@@ -48,32 +53,36 @@ export class SongService {
   }
 
   /**
-   * GET /api/canciones/{id}
-   * Obtiene una canción por ID con información detallada
+   * Obtiene información detallada de una canción por su ID.
+   * @param id ID de la canción
+   * @returns Observable con los detalles de la canción
    */
   obtenerCancion(id: number): Observable<CancionDetalleDTO> {
     return this.http.get<CancionDetalleDTO>(`${this.apiUrl}/${id}`);
   }
 
   /**
-   * GET /api/canciones/artist/{artistId}
-   * Obtiene todas las canciones de un artista
+   * Obtiene todas las canciones de un artista específico.
+   * @param artistId ID del artista
+   * @returns Observable con un arreglo de canciones
    */
   obtenerCancionesPorArtista(artistId: number): Observable<CancionDTO[]> {
     return this.http.get<CancionDTO[]>(`${this.apiUrl}/artist/${artistId}`);
   }
 
   /**
-   * GET /api/canciones/album/{albumId}
-   * Obtiene canciones de un álbum
+   * Obtiene todas las canciones de un álbum específico.
+   * @param albumId ID del álbum
+   * @returns Observable con un arreglo de canciones
    */
   obtenerCancionesPorAlbum(albumId: number): Observable<CancionDTO[]> {
     return this.http.get<CancionDTO[]>(`${this.apiUrl}/album/${albumId}`);
   }
 
   /**
-   * GET /api/canciones/search?q={query}
-   * Busca canciones por término
+   * Busca canciones por un término de búsqueda.
+   * @param query Término de búsqueda
+   * @returns Observable con un arreglo de canciones coincidentes
    */
   buscarCanciones(query: string): Observable<CancionDTO[]> {
     return this.http.get<CancionDTO[]>(`${this.apiUrl}/search`, {
@@ -82,48 +91,54 @@ export class SongService {
   }
 
   /**
-   * GET /api/canciones/gratuitas
-   * Obtiene canciones gratuitas
+   * Obtiene canciones gratuitas disponibles en la plataforma.
+   * @returns Observable con un arreglo de canciones gratuitas
    */
   obtenerCancionesGratuitas(): Observable<CancionDTO[]> {
     return this.http.get<CancionDTO[]>(`${this.apiUrl}/gratuitas`);
   }
 
   /**
-   * POST /api/canciones/{id}/reproducir
-   * Registra una reproducción de canción
+   * Registra la reproducción de una canción específica.
+   * @param id ID de la canción
+   * @returns Observable con información de la reproducción
    */
   registrarReproduccion(id: number): Observable<ReproduccionResponseDTO> {
     return this.http.post<ReproduccionResponseDTO>(`${this.apiUrl}/${id}/reproducir`, {});
   }
 
   /**
-   * GET /api/canciones/artist/{artistId}/stats
-   * Obtiene estadísticas de reproducciones totales de un artista
+   * Obtiene estadísticas de reproducciones totales de un artista.
+   * @param artistId ID del artista
+   * @returns Observable con estadísticas de reproducciones
    */
   obtenerEstadisticasArtista(artistId: number): Observable<EstadisticasArtistaDTO> {
     return this.http.get<EstadisticasArtistaDTO>(`${this.apiUrl}/artist/${artistId}/stats`);
   }
 
   /**
-   * POST /api/canciones
-   * Crea una nueva canción (requiere autenticación y rol ARTISTA)
+   * Crea una nueva canción.
+   * @param datos Objeto con información de la canción a crear
+   * @returns Observable con la canción creada
    */
   crearCancion(datos: CrearCancionDTO): Observable<CancionDTO> {
     return this.http.post<CancionDTO>(this.apiUrl, datos);
   }
 
   /**
-   * PUT /api/canciones/{id}
-   * Actualiza una canción existente (requiere ser propietario)
+   * Actualiza una canción existente.
+   * @param id ID de la canción a actualizar
+   * @param datos Objeto con los campos a actualizar
+   * @returns Observable con la canción actualizada
    */
   actualizarCancion(id: number, datos: EditarCancionDTO): Observable<CancionDTO> {
     return this.http.put<CancionDTO>(`${this.apiUrl}/${id}`, datos);
   }
 
   /**
-   * DELETE /api/canciones/{id}
-   * Elimina una canción (requiere ser propietario)
+   * Elimina una canción por su ID.
+   * @param id ID de la canción a eliminar
+   * @returns Observable que completa al eliminar
    */
   eliminarCancion(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);

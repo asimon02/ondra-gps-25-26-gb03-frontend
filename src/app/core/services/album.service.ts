@@ -1,16 +1,15 @@
-// src/app/services/album.service.ts
-
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { delay, map, switchMap, catchError } from 'rxjs/operators';
+import { delay, map, switchMap } from 'rxjs/operators';
 import { Album, AlbumTrack } from '../models/album.model';
 import { Song, SongArtist } from '../models/song.model';
 import { MOCK_ALBUMS } from '../mocks/mocks-albums';
 import { environment } from '../../../enviroments/enviroment';
+import { FavoritosService } from './favoritos.service';
 
 /**
- * Respuesta paginada compatible con Spring Boot y mocks
+ * Respuesta paginada compatible con distintos formatos de backend y con los mocks.
  */
 export interface PaginatedAlbumsResponse {
   albums?: Album[];
@@ -23,8 +22,11 @@ export interface PaginatedAlbumsResponse {
   size?: number;
 }
 
+/**
+ * Parámetros aceptados para consultas de álbumes.
+ */
 export interface AlbumQueryParams {
-  genre?: string; // Cambio: genreId a genre (string directo)
+  genre?: string;
   genreId?: string;
   artistId?: string;
   search?: string;
@@ -35,11 +37,24 @@ export interface AlbumQueryParams {
   limit?: number;
 }
 
+/**
+ * DTO para añadir una pista a un álbum.
+ */
 export interface AddTrackToAlbumDto {
-  songId: string; // Cambio: number a string
+  songId: string;
   trackNumber: number;
 }
 
+/**
+ * Servicio encargado de la gestión de álbumes, incluyendo:
+ * - Obtención de álbumes (backend o mock)
+ * - Búsqueda y filtrado
+ * - Estado de favoritos y compras
+ * - Mapeo y normalización de respuestas del backend
+ *
+ * El servicio respeta la configuración `environment.useMock` para
+ * redirigir llamadas al conjunto de mocks local cuando sea necesario.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -49,21 +64,36 @@ export class AlbumService {
   private readonly favoritesUrl = `${environment.apis.contenidos}/favoritos`;
   private readonly purchasesUrl = `${environment.apis.contenidos}/compras`;
 
-  // Mock
+  // Almacenamiento local de mocks para modo `useMock`
   private albums: Album[] = [...MOCK_ALBUMS];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private favoritosService: FavoritosService
+  ) {}
 
   // ===============================================================
-  // PUBLIC API
+  // API PÚBLICA
   // ===============================================================
 
+  /**
+   * Obtiene una lista paginada de álbumes según los parámetros indicados.
+   *
+   * @param params Parámetros de consulta opcionales (filtro, orden, paginado).
+   * @returns Observable con la respuesta paginada normalizada.
+   */
   getAllAlbums(params?: AlbumQueryParams): Observable<PaginatedAlbumsResponse> {
     return environment.useMock
       ? this.getAllAlbumsMock(params)
       : this.getAllAlbumsBackend(params);
   }
 
+  /**
+   * Obtiene un álbum por su identificador.
+   *
+   * @param id Identificador del álbum.
+   * @returns Observable con el álbum mapeado.
+   */
   getAlbumById(id: string): Observable<Album> {
     return environment.useMock
       ? this.getAlbumByIdMock(id)
@@ -72,6 +102,12 @@ export class AlbumService {
       );
   }
 
+  /**
+   * Obtiene todos los álbumes de un artista.
+   *
+   * @param artistId Identificador del artista.
+   * @returns Observable con la lista de álbumes del artista.
+   */
   getAlbumsByArtist(artistId: string): Observable<Album[]> {
     if (environment.useMock) {
       const result = this.albums.filter(album => album.artistId === artistId);
@@ -82,6 +118,12 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Busca álbumes mediante una cadena de texto.
+   *
+   * @param query Texto de búsqueda.
+   * @returns Observable con la lista de álbumes que coinciden.
+   */
   searchAlbums(query: string): Observable<Album[]> {
     if (environment.useMock) {
       const q = query.toLowerCase();
@@ -101,6 +143,11 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Devuelve álbumes que contienen pistas (trackList no vacía).
+   *
+   * @returns Observable con la lista de álbumes que tienen pistas.
+   */
   getAlbumsWithTracks(): Observable<Album[]> {
     if (environment.useMock) {
       const result = this.albums.filter(a => a.trackList.length > 0);
@@ -111,6 +158,12 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Obtiene la lista de pistas de un álbum, ordenadas por número de pista.
+   *
+   * @param albumId Identificador del álbum.
+   * @returns Observable con la lista de pistas del álbum.
+   */
   getAlbumTracks(albumId: string): Observable<Album['trackList']> {
     if (environment.useMock) {
       const album = this.albums.find(a => a.id === albumId);
@@ -126,33 +179,60 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Alterna el estado de favorito de un álbum. En backend utiliza FavoritosService
+   * para mantener consistencia entre álbum y canciones asociadas.
+   *
+   * @param albumId Identificador del álbum.
+   * @returns Observable con el álbum actualizado (solo campos relevantes en backend).
+   */
   toggleFavorite(albumId: string): Observable<Album> {
     if (environment.useMock) {
       const album = this.albums.find(a => a.id === albumId);
       if (!album) {
         return throwError(() => new Error(`Album with ID ${albumId} not found`));
       }
-      album.isFavorite = !album.isFavorite;
+      const newFavoriteState = !album.isFavorite;
+      album.isFavorite = newFavoriteState;
+
+      // Actualiza el estado de favorito de las pistas del álbum
+      album.trackList.forEach(track => {
+        track.isFavorite = newFavoriteState;
+      });
+
       return of(album).pipe(delay(this.MOCK_DELAY));
     }
 
-    const payload = { tipoContenido: 'ALBUM', idAlbum: Number(albumId) };
-
-    return this.isAlbumFavorite(albumId).pipe(
+    // En backend: comprobar estado actual y agregar/eliminar usando FavoritosService
+    return this.favoritosService.esAlbumFavorito(Number(albumId)).pipe(
       switchMap((isFavorite) => {
-        if (isFavorite) {
-          return this.http.delete<void>(`${this.favoritesUrl}/albumes/${albumId}`).pipe(
-            map(() => ({ id: albumId, isFavorite: false } as Album))
-          );
-        }
+        return this.getAlbumTracks(albumId).pipe(
+          switchMap((tracks) => {
+            const songIds = tracks.map(track => Number(track.id)).filter(id => !isNaN(id));
 
-        return this.http.post<any>(this.favoritesUrl, payload).pipe(
-          map(() => ({ id: this.toStringId(albumId), isFavorite: true } as Album))
+            if (isFavorite) {
+              // Eliminar de favoritos (álbum y canciones)
+              return this.favoritosService.eliminarAlbumConCancionesDeFavoritos(Number(albumId), songIds).pipe(
+                map(() => ({ id: albumId, isFavorite: false } as Album))
+              );
+            } else {
+              // Agregar a favoritos (álbum y canciones)
+              return this.favoritosService.agregarAlbumConCancionesAFavoritos(Number(albumId), songIds).pipe(
+                map(() => ({ id: this.toStringId(albumId), isFavorite: true } as Album))
+              );
+            }
+          })
         );
       })
     );
   }
 
+  /**
+   * Marca un álbum como comprado en modo mock o consulta el estado de compra en backend.
+   *
+   * @param albumId Identificador del álbum.
+   * @returns Observable con el álbum (o estado de compra) correspondiente.
+   */
   purchaseAlbum(albumId: string): Observable<Album> {
     if (environment.useMock) {
       const album = this.albums.find(a => a.id === albumId);
@@ -168,12 +248,17 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Obtiene los álbumes marcados como favoritos.
+   *
+   * @returns Observable con la lista de álbumes en favoritos.
+   */
   getFavoriteAlbums(): Observable<Album[]> {
     if (environment.useMock) {
       return of(this.albums.filter(a => a.isFavorite)).pipe(delay(this.MOCK_DELAY));
     }
     return this.http.get<any>(this.favoritesUrl, {
-      params: new HttpParams().set('tipo', 'ALBUM')
+      params: new HttpParams().set('tipo', 'ÁLBUM')
     }).pipe(
       map((response) => {
         const items = response?.favoritos ?? response?.content ?? response ?? [];
@@ -187,12 +272,17 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Obtiene los álbumes adquiridos por el usuario.
+   *
+   * @returns Observable con la lista de álbumes comprados.
+   */
   getPurchasedAlbums(): Observable<Album[]> {
     if (environment.useMock) {
       return of(this.albums.filter(a => a.isPurchased)).pipe(delay(this.MOCK_DELAY));
     }
     return this.http.get<any>(this.purchasesUrl, {
-      params: new HttpParams().set('tipo', 'ALBUM')
+      params: new HttpParams().set('tipo', 'ÁLBUM')
     }).pipe(
       map((response) => {
         const items = response?.content ?? response?.compras ?? response ?? [];
@@ -206,6 +296,12 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Obtiene álbumes filtrados por género.
+   *
+   * @param genre Nombre del género.
+   * @returns Observable con la lista de álbumes del género solicitado.
+   */
   getAlbumsByGenre(genre: string): Observable<Album[]> {
     if (environment.useMock) {
       const g = genre.toLowerCase();
@@ -217,6 +313,11 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Obtiene los álbumes gratuitos (precio 0).
+   *
+   * @returns Observable con los álbumes gratuitos.
+   */
   getFreeAlbums(): Observable<Album[]> {
     if (environment.useMock) {
       return of(this.albums.filter(a => a.price === 0)).pipe(delay(this.MOCK_DELAY));
@@ -224,6 +325,12 @@ export class AlbumService {
     return this.http.get<Album[]>(`${this.apiUrl}/gratuitos`);
   }
 
+  /**
+   * Obtiene los álbumes mejor valorados.
+   *
+   * @param limit Límite de resultados a retornar. Por defecto 10.
+   * @returns Observable con los álbumes top valorados.
+   */
   getTopRatedAlbums(limit: number = 10): Observable<Album[]> {
     if (environment.useMock) {
       const result = [...this.albums]
@@ -239,6 +346,12 @@ export class AlbumService {
     }).pipe(map(albums => albums.map(album => this.mapAlbumDto(album))));
   }
 
+  /**
+   * Obtiene los álbumes más reproducidos.
+   *
+   * @param limit Límite de resultados a retornar. Por defecto 10.
+   * @returns Observable con los álbumes más reproducidos.
+   */
   getMostPlayedAlbums(limit: number = 10): Observable<Album[]> {
     if (environment.useMock) {
       const result = [...this.albums]
@@ -256,6 +369,12 @@ export class AlbumService {
     );
   }
 
+  /**
+   * Obtiene los álbumes recientes ordenados por fecha de publicación.
+   *
+   * @param limit Límite de resultados a retornar. Por defecto 10.
+   * @returns Observable con los álbumes más recientes.
+   */
   getRecentAlbums(limit: number = 10): Observable<Album[]> {
     if (environment.useMock) {
       const result = [...this.albums]
@@ -270,12 +389,25 @@ export class AlbumService {
     }).pipe(map(albums => albums.map(album => this.mapAlbumDto(album))));
   }
 
+  /**
+   * Obtiene la duración total de un álbum.
+   *
+   * @param albumId Identificador del álbum.
+   * @returns Observable con la duración total en segundos.
+   */
   getTotalDuration(albumId: string): Observable<number> {
     return this.getAlbumById(albumId).pipe(
       map(album => album.totalDuration)
     );
   }
 
+  /**
+   * Añade una pista a un álbum.
+   *
+   * @param albumId Identificador del álbum.
+   * @param dto Datos de la pista a añadir.
+   * @returns Observable que completa cuando la operación finaliza.
+   */
   addTrackToAlbum(albumId: string, dto: AddTrackToAlbumDto): Observable<void> {
     if (environment.useMock) {
       return of(void 0).pipe(delay(this.MOCK_DELAY));
@@ -283,6 +415,13 @@ export class AlbumService {
     return this.http.post<void>(`${this.apiUrl}/${albumId}/tracks`, dto);
   }
 
+  /**
+   * Elimina una pista de un álbum.
+   *
+   * @param albumId Identificador del álbum.
+   * @param songId Identificador de la canción a eliminar.
+   * @returns Observable que completa cuando la operación finaliza.
+   */
   removeTrackFromAlbum(albumId: string, songId: string): Observable<void> {
     if (environment.useMock) {
       return of(void 0).pipe(delay(this.MOCK_DELAY));
@@ -291,24 +430,31 @@ export class AlbumService {
   }
 
   // ===============================================================
-  // MOCK MODE
+  // MODO MOCK (métodos privados)
   // ===============================================================
 
+  /**
+   * Implementación de `getAllAlbums` en modo mock.
+   *
+   * @param params Parámetros de consulta.
+   * @returns Observable con la respuesta paginada simulada.
+   * @internal
+   */
   private getAllAlbumsMock(params?: AlbumQueryParams): Observable<PaginatedAlbumsResponse> {
     let filtered = [...this.albums];
 
-    // Artista
+    // Filtrado por artista
     if (params?.artistId) {
       filtered = filtered.filter(a => a.artistId === params.artistId);
     }
 
-    // GAnero (string Anico)
+    // Filtrado por género
     if (params?.genre) {
       const g = params.genre.toLowerCase();
       filtered = filtered.filter(a => a.genre.toLowerCase() === g);
     }
 
-    // BAsqueda
+    // Búsqueda por texto
     if (params?.search) {
       const q = params.search.toLowerCase();
       filtered = filtered.filter(a =>
@@ -319,7 +465,7 @@ export class AlbumService {
       );
     }
 
-    // Precio
+    // Filtrado por precio
     if (params?.minPrice !== undefined) {
       filtered = filtered.filter(a => a.price >= params.minPrice!);
     }
@@ -327,10 +473,10 @@ export class AlbumService {
       filtered = filtered.filter(a => a.price <= params.maxPrice!);
     }
 
-    // Orden
+    // Ordenamiento
     filtered = this.applySorting(filtered, params?.orderBy);
 
-    // PaginaciAn
+    // Paginación
     const page = params?.page || 1;
     const limit = params?.limit || 20;
     const start = (page - 1) * limit;
@@ -347,6 +493,13 @@ export class AlbumService {
     }).pipe(delay(this.MOCK_DELAY));
   }
 
+  /**
+   * Obtiene un álbum del conjunto de mocks por ID.
+   *
+   * @param id Identificador del álbum.
+   * @returns Observable con el álbum o error si no se encuentra.
+   * @internal
+   */
   private getAlbumByIdMock(id: string): Observable<Album> {
     const album = this.albums.find(a => a.id === id);
     if (!album) {
@@ -355,6 +508,14 @@ export class AlbumService {
     return of(album).pipe(delay(this.MOCK_DELAY));
   }
 
+  /**
+   * Aplica ordenamiento según el criterio indicado.
+   *
+   * @param albums Lista de álbumes a ordenar.
+   * @param orderBy Criterio de ordenamiento.
+   * @returns Lista ordenada.
+   * @internal
+   */
   private applySorting(albums: Album[], orderBy?: string): Album[] {
     switch (orderBy) {
       case 'most_recent':
@@ -379,9 +540,16 @@ export class AlbumService {
   }
 
   // ===============================================================
-  // BACKEND MODE
+  // MODO BACKEND (métodos privados)
   // ===============================================================
 
+  /**
+   * Construye y ejecuta la llamada al backend para obtener álbumes.
+   *
+   * @param params Parámetros opcionales de consulta.
+   * @returns Observable con la respuesta paginada normalizada.
+   * @internal
+   */
   private getAllAlbumsBackend(params?: AlbumQueryParams): Observable<PaginatedAlbumsResponse> {
     let httpParams = new HttpParams();
 
@@ -392,12 +560,25 @@ export class AlbumService {
     if (params?.orderBy) httpParams = httpParams.set('orderBy', params.orderBy);
     if (params?.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
     if (params?.limit) httpParams = httpParams.set('limit', params.limit.toString());
+    if (params?.minPrice !== undefined) {
+      httpParams = httpParams.set('minPrice', params.minPrice.toString());
+    }
+    if (params?.maxPrice !== undefined) {
+      httpParams = httpParams.set('maxPrice', params.maxPrice.toString());
+    }
 
     return this.http.get<any>(`${this.apiUrl}`, { params: httpParams }).pipe(
       map(res => this.normalizeBackendResponse(res))
     );
   }
 
+  /**
+   * Normaliza distintas formas de respuesta del backend a un formato paginado esperado.
+   *
+   * @param response Respuesta original del backend.
+   * @returns Respuesta normalizada con contenido mapeado a Album.
+   * @internal
+   */
   private normalizeBackendResponse(response: any): PaginatedAlbumsResponse {
     const rawContent = response?.albumes || response?.albums || response?.content || response?.items || [];
     const content = Array.isArray(rawContent) ? rawContent.map(album => this.mapAlbumDto(album)) : [];
@@ -418,6 +599,13 @@ export class AlbumService {
     };
   }
 
+  /**
+   * Mapea un DTO de backend a la entidad Album utilizada por el frontend.
+   *
+   * @param dto Objeto recibido desde el backend o mocks.
+   * @returns Album mapeado con valores por defecto cuando faltan propiedades.
+   * @internal
+   */
   private mapAlbumDto(dto: any): Album {
     if (!dto) {
       return {
@@ -481,6 +669,13 @@ export class AlbumService {
     };
   }
 
+  /**
+   * Mapea un objeto de pista/track desde backend a AlbumTrack.
+   *
+   * @param track Objeto de pista recibido del backend o fuente de datos.
+   * @returns AlbumTrack mapeado para el frontend.
+   * @internal
+   */
   private mapAlbumTrack(track: any): AlbumTrack {
     const songData = track?.song ?? track?.cancion ?? track ?? {};
     const mappedSong = this.mapSongFromTrack(songData, track);
@@ -491,6 +686,14 @@ export class AlbumService {
     };
   }
 
+  /**
+   * Mapea la información de una canción contenida en un track a la entidad Song del frontend.
+   *
+   * @param dto Objeto con datos de la canción.
+   * @param track Objeto track que puede contener información adicional relacionada.
+   * @returns Song mapeada.
+   * @internal
+   */
   private mapSongFromTrack(dto: any, track?: any): Song {
     const mappedArtist = this.mapArtist(
       dto?.artist ?? dto?.artista,
@@ -521,14 +724,21 @@ export class AlbumService {
       isPurchased: false,
       albums: Array.isArray(albums)
         ? albums.map((album: any) => ({
-            id: this.toStringId(album?.id ?? album?.idAlbum ?? album?.albumId),
-            title: album?.title ?? album?.titulo ?? album?.tituloAlbum ?? album?.nombre ?? '',
-            coverUrl: album?.coverUrl ?? album?.urlPortada ?? album?.portada ?? album?.portadaUrl ?? ''
-          }))
+          id: this.toStringId(album?.id ?? album?.idAlbum ?? album?.albumId),
+          title: album?.title ?? album?.titulo ?? album?.tituloAlbum ?? album?.nombre ?? '',
+          coverUrl: album?.coverUrl ?? album?.urlPortada ?? album?.portada ?? album?.portadaUrl ?? ''
+        }))
         : []
     };
   }
 
+  /**
+   * Convierte un valor a cadena para usar como identificador en frontend.
+   *
+   * @param value Valor original del identificador.
+   * @returns Cadena representando el id o cadena vacía si value es null/undefined.
+   * @internal
+   */
   private toStringId(value: any): string {
     if (value === undefined || value === null) {
       return '';
@@ -536,6 +746,15 @@ export class AlbumService {
     return value.toString();
   }
 
+  /**
+   * Mapea diferentes formas de representación de artista del backend a SongArtist.
+   *
+   * @param artistLike Objeto que puede representar un artista en varias formas.
+   * @param fallbackId Identificador alternativo si no existe en `artistLike`.
+   * @param fallbackName Nombre alternativo si no existe en `artistLike`.
+   * @returns SongArtist mapeado.
+   * @internal
+   */
   private mapArtist(artistLike: any, fallbackId?: any, fallbackName?: any): SongArtist {
     const artist: any = artistLike || {};
     const userIdValue = artist.userId ?? artist.idUsuario ?? artist.usuarioId ?? artist?.usuario?.id ?? null;
@@ -549,6 +768,12 @@ export class AlbumService {
     };
   }
 
+  /**
+   * Comprueba si un álbum está en favoritos.
+   *
+   * @param albumId Identificador del álbum.
+   * @returns Observable que indica si el álbum está en favoritos.
+   */
   isAlbumFavorite(albumId: string): Observable<boolean> {
     if (environment.useMock) {
       const album = this.albums.find(a => a.id === albumId);
@@ -557,6 +782,12 @@ export class AlbumService {
     return this.http.get<boolean>(`${this.favoritesUrl}/albumes/${albumId}/check`);
   }
 
+  /**
+   * Comprueba si un álbum ha sido comprado.
+   *
+   * @param albumId Identificador del álbum.
+   * @returns Observable que indica si el álbum ha sido comprado.
+   */
   isAlbumPurchased(albumId: string): Observable<boolean> {
     if (environment.useMock) {
       const album = this.albums.find(a => a.id === albumId);

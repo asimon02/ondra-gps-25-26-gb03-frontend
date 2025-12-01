@@ -2,7 +2,7 @@ import { Album } from '../models/album.model';
 import { MOCK_SONGS } from './mock-songs';
 
 function getSong(id: string) {
-  return MOCK_SONGS.find(s => s.id === id)!;
+  return MOCK_SONGS.find((s) => s.id === id)!;
 }
 
 export const MOCK_ALBUMS: Album[] = [
@@ -18,7 +18,7 @@ export const MOCK_ALBUMS: Album[] = [
     // TRACKLIST
     trackList: [
       { ...getSong('1'), trackNumber: 1, addedDate: '1975-11-21T00:00:00Z' },
-      { ...getSong('2'), trackNumber: 2, addedDate: '1975-11-21T00:00:00Z' }
+      { ...getSong('2'), trackNumber: 2, addedDate: '1975-11-21T00:00:00Z' },
     ],
 
     // CÁLCULOS
@@ -29,7 +29,11 @@ export const MOCK_ALBUMS: Album[] = [
 
     // ARTISTA
     artistId: '101',
-    artist: { id: '101', artisticName: 'Queen', profileImage: 'https://picsum.photos/seed/queen/200/200' }
+    artist: {
+      id: '101',
+      artisticName: 'Queen',
+      profileImage: 'https://picsum.photos/seed/queen/200/200',
+    },
   },
 
   {
@@ -43,7 +47,7 @@ export const MOCK_ALBUMS: Album[] = [
 
     trackList: [
       { ...getSong('4'), trackNumber: 1, addedDate: '1979-11-30T00:00:00Z' },
-      { ...getSong('3'), trackNumber: 2, addedDate: '1979-11-30T00:00:00Z' }
+      { ...getSong('3'), trackNumber: 2, addedDate: '1979-11-30T00:00:00Z' },
     ],
 
     totalDuration: getSong('4').duration + getSong('3').duration,
@@ -52,13 +56,18 @@ export const MOCK_ALBUMS: Album[] = [
     averageRating: 4.9,
 
     artistId: '102',
-    artist: { id: '102', artisticName: 'Pink Floyd', profileImage: 'https://picsum.photos/seed/pinkfloyd/200/200' }
+    artist: {
+      id: '102',
+      artisticName: 'Pink Floyd',
+      profileImage: 'https://picsum.photos/seed/pinkfloyd/200/200',
+    },
   },
 
   {
     id: '203',
     title: 'Abbey Road',
-    description: 'El último disco grabado por The Beatles, una despedida monumental.',
+    description:
+      'El último disco grabado por The Beatles, una despedida monumental.',
     coverUrl: 'https://picsum.photos/seed/abbeyroad/400/400',
     releaseDate: '1969-09-26T00:00:00Z',
     genre: 'Rock',
@@ -67,24 +76,24 @@ export const MOCK_ALBUMS: Album[] = [
     trackList: [
       { ...getSong('7'), trackNumber: 1, addedDate: '1969-09-26T00:00:00Z' },
       { ...getSong('8'), trackNumber: 2, addedDate: '1969-09-26T00:00:00Z' },
-      { ...getSong('9'), trackNumber: 3, addedDate: '1969-09-26T00:00:00Z' }
+      { ...getSong('9'), trackNumber: 3, addedDate: '1969-09-26T00:00:00Z' },
     ],
 
     totalDuration:
-      getSong('7').duration +
-      getSong('8').duration +
-      getSong('9').duration,
+      getSong('7').duration + getSong('8').duration + getSong('9').duration,
 
     totalTracks: 3,
     totalPlayCount:
-      getSong('7').playCount +
-      getSong('8').playCount +
-      getSong('9').playCount,
+      getSong('7').playCount + getSong('8').playCount + getSong('9').playCount,
 
     averageRating: 4.9,
 
     artistId: '105',
-    artist: { id: '105', artisticName: 'The Beatles', profileImage: 'https://picsum.photos/seed/beatles/200/200' }
+    artist: {
+      id: '105',
+      artisticName: 'The Beatles',
+      profileImage: 'https://picsum.photos/seed/beatles/200/200',
+    },
   },
 
   {
@@ -99,13 +108,11 @@ export const MOCK_ALBUMS: Album[] = [
     trackList: [
       { ...getSong('10'), trackNumber: 1, addedDate: '1982-11-30T00:00:00Z' },
       { ...getSong('11'), trackNumber: 2, addedDate: '1982-11-30T00:00:00Z' },
-      { ...getSong('12'), trackNumber: 3, addedDate: '1982-11-30T00:00:00Z' }
+      { ...getSong('12'), trackNumber: 3, addedDate: '1982-11-30T00:00:00Z' },
     ],
 
     totalDuration:
-      getSong('10').duration +
-      getSong('11').duration +
-      getSong('12').duration,
+      getSong('10').duration + getSong('11').duration + getSong('12').duration,
 
     totalTracks: 3,
     totalPlayCount:
@@ -116,7 +123,11 @@ export const MOCK_ALBUMS: Album[] = [
     averageRating: 5.0,
 
     artistId: '106',
-    artist: { id: '106', artisticName: 'Michael Jackson', profileImage: 'https://picsum.photos/seed/mj/200/200' }
+    artist: {
+      id: '106',
+      artisticName: 'Michael Jackson',
+      profileImage: 'https://picsum.photos/seed/mj/200/200',
+    },
   },
 
   {
@@ -131,13 +142,11 @@ export const MOCK_ALBUMS: Album[] = [
     trackList: [
       { ...getSong('13'), trackNumber: 1, addedDate: '2013-05-17T00:00:00Z' },
       { ...getSong('14'), trackNumber: 2, addedDate: '2013-05-17T00:00:00Z' },
-      { ...getSong('15'), trackNumber: 3, addedDate: '2013-05-17T00:00:00Z' }
+      { ...getSong('15'), trackNumber: 3, addedDate: '2013-05-17T00:00:00Z' },
     ],
 
     totalDuration:
-      getSong('13').duration +
-      getSong('14').duration +
-      getSong('15').duration,
+      getSong('13').duration + getSong('14').duration + getSong('15').duration,
 
     totalTracks: 3,
     totalPlayCount:
@@ -148,6 +157,10 @@ export const MOCK_ALBUMS: Album[] = [
     averageRating: 4.7,
 
     artistId: '107',
-    artist: { id: '107', artisticName: 'Daft Punk', profileImage: 'https://picsum.photos/seed/daftpunk/200/200' }
-  }
+    artist: {
+      id: '107',
+      artisticName: 'Daft Punk',
+      profileImage: 'https://picsum.photos/seed/daftpunk/200/200',
+    },
+  },
 ];

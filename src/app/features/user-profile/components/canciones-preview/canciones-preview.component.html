@@ -1,15 +1,13 @@
-<!-- src/app/features/user-profile/components/canciones-preview/canciones-preview.component.html -->
-
 <div *ngIf="!isLoading" class="h-full flex flex-col">
   <app-content-carousel
     [items]="canciones"
     [title]="isOwnProfile ? 'Mis Canciones' : 'Canciones'"
     icon="song"
     [showAddButton]="isOwnProfile"
+    [showPlayButton]="false"
     [emptyMessage]="isOwnProfile ? 'Aún no has subido ninguna canción' : 'Este artista aún no ha publicado canciones'"
     (addClick)="onAddCancion()"
-    (itemClick)="onItemClick($event)"
-    (playClick)="onPlayClick($event)">
+    (itemClick)="onItemClick($event)">
   </app-content-carousel>
 </div>
 

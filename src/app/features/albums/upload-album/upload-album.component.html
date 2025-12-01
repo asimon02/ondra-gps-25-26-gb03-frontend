@@ -5,16 +5,7 @@
 
     <!-- Header -->
     <div class="mb-8">
-      <button
-        (click)="goBack()"
-        class="group flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-200 mb-6">
-        <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 group-hover:border-primary flex items-center justify-center transition-all duration-200">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-          </svg>
-        </div>
-        <span class="font-medium">Volver</span>
-      </button>
+      <app-back-button class="mb-6"></app-back-button>
 
       <div class="flex items-start justify-between flex-wrap gap-4">
         <div class="flex items-center gap-3">
@@ -354,7 +345,7 @@
               <p class="text-gray-600 mt-4 font-medium">Cargando tus canciones...</p>
             </div>
           } @else if (misCanciones().length === 0) {
-            <!-- ✅ SIN REFERENCIA A usandoCancionesPrueba() -->
+            <!-- SIN REFERENCIA A usandoCancionesPrueba() -->
             <div class="text-center py-16">
               <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
                 <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">

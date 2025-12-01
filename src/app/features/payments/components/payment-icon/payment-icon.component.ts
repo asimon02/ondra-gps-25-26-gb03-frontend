@@ -1,7 +1,12 @@
-// src/app/features/payments/payment-icon/payment-icon.component.ts
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+/**
+ * Componente que muestra el icono correspondiente a un método de pago.
+ *
+ * Soporta: tarjeta, PayPal, Bizum, transferencia bancaria.
+ * Permite ajustar tamaño y clases externas.
+ */
 @Component({
   selector: 'app-payment-icon',
   standalone: true,
@@ -16,7 +21,7 @@ import { CommonModule } from '@angular/common';
         <path fill="#FFC107" d="M12.212,24.945l-0.966-4.748c0,0-0.437-1.029-1.573-1.029c-1.136,0-4.44,0-4.44,0S10.894,20.84,12.212,24.945z"/>
       </svg>
 
-      <!-- PAYPAL - Logo oficial -->
+      <!-- PAYPAL -->
       <svg *ngSwitchCase="'paypal'" [class]="svgClass" viewBox="0 0 48 48" fill="none">
         <circle cx="24" cy="24" r="20" fill="#0070BA"/>
         <path d="M32.3305 18.0977C32.3082 18.24 32.2828 18.3856 32.2542 18.5351C31.2704 23.5861 27.9046 25.331 23.606 25.331H21.4173C20.8916 25.331 20.4486 25.7127 20.3667 26.2313L19.2461 33.3381L18.9288 35.3527C18.8755 35.693 19.1379 36 19.4815 36H23.3634C23.8231 36 24.2136 35.666 24.286 35.2127L24.3241 35.0154L25.055 30.3772L25.1019 30.1227C25.1735 29.6678 25.5648 29.3338 26.0245 29.3338H26.6051C30.3661 29.3338 33.3103 27.8068 34.1708 23.388C34.5303 21.5421 34.3442 20.0008 33.393 18.9168C33.1051 18.59 32.748 18.3188 32.3305 18.0977Z" fill="white" fill-opacity="0.6"/>
@@ -24,7 +29,7 @@ import { CommonModule } from '@angular/common';
         <path d="M21.6461 18.1231C21.6946 17.8105 21.895 17.5552 22.1646 17.4264C22.2879 17.3675 22.4239 17.3349 22.5678 17.3349H28.4149C29.1077 17.3349 29.7542 17.3803 30.3444 17.4757C30.513 17.5027 30.6768 17.5338 30.8367 17.5687C30.9957 17.6045 31.1508 17.6443 31.3011 17.688C31.3759 17.7103 31.4498 17.7334 31.5222 17.7564C31.8125 17.8527 32.0821 17.9664 32.331 18.0976C32.6237 16.231 32.3287 14.9601 31.3194 13.8093C30.2068 12.5424 28.1986 12 25.629 12H18.169C17.6441 12 17.1963 12.3817 17.1152 12.9011L14.0079 32.5969C13.9467 32.9866 14.2473 33.3381 14.6402 33.3381H19.2458L20.4022 26.0014L21.6461 18.1231Z" fill="white"/>
       </svg>
 
-      <!-- BIZUM - Logo oficial -->
+      <!-- BIZUM -->
       <svg *ngSwitchCase="'bizum'" [class]="svgClass" viewBox="0 0 38.1 50">
         <path fill="#05C0C7" fill-rule="evenodd" clip-rule="evenodd" d="M9.2,17.9c1.8,1.3,4.4,0.9,5.7-0.9l4.8-6.6C21,8.6,20.6,6,18.8,4.7c-1.8-1.3-4.4-0.9-5.7,0.9l-4.8,6.6
           C7,14,7.4,16.5,9.2,17.9z M31,8.6c-1.8-1.3-4.4-0.9-5.7,0.9L6.1,35.8c-1.3,1.8-0.9,4.4,0.9,5.7c1.8,1.3,4.4,0.9,5.7-0.9l19.1-26.3
@@ -34,7 +39,7 @@ import { CommonModule } from '@angular/common';
           l4.8-6.6C31.1,36.1,30.7,33.5,28.9,32.2z"/>
       </svg>
 
-      <!-- TRANSFERENCIA - Icono de banco -->
+      <!-- TRANSFERENCIA -->
       <svg *ngSwitchCase="'transferencia'" [class]="svgClass" viewBox="0 0 24 24" fill="currentColor">
         <path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"/>
       </svg>
@@ -43,27 +48,40 @@ import { CommonModule } from '@angular/common';
       <svg *ngSwitchDefault [class]="svgClass" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
       </svg>
+
     </div>
   `,
   styles: [`
-    :host {
-      display: contents;
-    }
-    svg {
-      display: block;
-    }
+    :host { display: contents; }
+    svg { display: block; }
   `]
 })
 export class PaymentIconComponent {
+  /**
+   * Tipo de método de pago a mostrar.
+   * 'tarjeta' | 'paypal' | 'bizum' | 'transferencia'
+   */
   @Input() type: 'tarjeta' | 'paypal' | 'bizum' | 'transferencia' = 'tarjeta';
+
+  /**
+   * Tamaño del icono.
+   * 'sm' → pequeño, 'md' → medio, 'lg' → grande
+   */
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
+
+  /**
+   * Clase adicional para el contenedor del SVG
+   */
   @Input() containerClass = '';
 
+  /**
+   * Calcula la clase CSS del SVG según el tamaño.
+   */
   get svgClass(): string {
     const sizeClasses = {
-      'sm': 'w-6 h-6',
-      'md': 'w-8 h-8',
-      'lg': 'w-12 h-12'
+      sm: 'w-6 h-6',
+      md: 'w-8 h-8',
+      lg: 'w-12 h-12'
     };
     return sizeClasses[this.size];
   }

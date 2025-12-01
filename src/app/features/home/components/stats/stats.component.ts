@@ -2,6 +2,10 @@ import { Component, Input, OnChanges, SimpleChanges, ChangeDetectorRef } from '@
 import { CommonModule } from '@angular/common';
 import { StatsGlobales } from '../../../../shared/models/stats.model';
 
+/**
+ * Componente que muestra estadísticas globales de la plataforma.
+ * Permite animar los números incrementándolos de 0 hasta su valor final.
+ */
 @Component({
   selector: 'app-stats',
   standalone: true,
@@ -10,12 +14,19 @@ import { StatsGlobales } from '../../../../shared/models/stats.model';
   styleUrls: ['./stats.component.scss']
 })
 export class StatsComponent implements OnChanges {
+
+  /** Estadísticas globales recibidas desde el componente padre */
   @Input() stats: StatsGlobales | null = null;
 
+  /** Lista de estadísticas a mostrar, incluyendo valor actual para animación */
   displayStats: { label: string; value: number; current: number }[] = [];
 
   constructor(private cdr: ChangeDetectorRef) {}
 
+  /**
+   * Detecta cambios en la propiedad de entrada `stats` y reinicia la animación.
+   * @param changes Cambios detectados en las propiedades de entrada
+   */
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['stats'] && this.stats) {
       this.initializeStats();
@@ -23,6 +34,10 @@ export class StatsComponent implements OnChanges {
     }
   }
 
+  /**
+   * Inicializa las estadísticas a mostrar a partir de los datos recibidos.
+   * Cada estadística comienza con valor actual en 0 para animación.
+   */
   private initializeStats(): void {
     if (!this.stats) return;
 
@@ -34,6 +49,10 @@ export class StatsComponent implements OnChanges {
     ];
   }
 
+  /**
+   * Anima cada estadística incrementando su valor actual desde 0 hasta el valor final.
+   * Se utiliza un intervalo para actualizar el valor y disparar la detección de cambios.
+   */
   private animateNumbers(): void {
     this.displayStats.forEach((stat) => {
       let start = 0;
@@ -41,10 +60,12 @@ export class StatsComponent implements OnChanges {
       const interval = setInterval(() => {
         start += increment;
         stat.current = Math.floor(start);
+
         if (start >= stat.value) {
           stat.current = stat.value;
           clearInterval(interval);
         }
+
         this.cdr.detectChanges();
       }, 25);
     });

@@ -17,12 +17,34 @@ import { AuthStateService } from '../../../../core/services/auth-state.service';
   styleUrls: ['./albumes-preview.component.scss']
 })
 export class AlbumesPreviewComponent implements OnInit {
+  /**
+   * ID del artista al que pertenecen los álbumes a mostrar.
+   */
   @Input() artistaId?: number;
-  @Input() nombreArtista?: string; // ✅ CAMBIAR A nombreArtista (sin "ico")
+
+  /**
+   * Nombre del artista asociado a los álbumes.
+   */
+  @Input() nombreArtista?: string;
+
+  /**
+   * Indica si el perfil visualizado pertenece al usuario autenticado.
+   */
   @Input() isOwnProfile: boolean = false;
 
+  /**
+   * Lista de álbumes en formato compatible con el carrusel.
+   */
   albumes: CarouselItem[] = [];
+
+  /**
+   * Indica si los datos están siendo cargados.
+   */
   isLoading = true;
+
+  /**
+   * Mensaje de error a mostrar en caso de fallo al obtener los álbumes.
+   */
   errorMessage = '';
 
   constructor(
@@ -34,13 +56,11 @@ export class AlbumesPreviewComponent implements OnInit {
     private authState: AuthStateService
   ) {}
 
+  /**
+   * Hook de inicialización del componente.
+   * Si se proporciona un ID de artista, se inicia la carga de álbumes.
+   */
   ngOnInit(): void {
-    console.log('💿 AlbumesPreview - Inputs recibidos:', {
-      artistaId: this.artistaId,
-      nombreArtista: this.nombreArtista, // ✅ Verificar qué llega
-      isOwnProfile: this.isOwnProfile
-    });
-
     if (this.artistaId) {
       this.cargarAlbumes();
     } else {
@@ -48,6 +68,10 @@ export class AlbumesPreviewComponent implements OnInit {
     }
   }
 
+  /**
+   * Obtiene los álbumes del artista desde el servicio correspondiente
+   * y los mapea al formato utilizado por el componente de carrusel.
+   */
   cargarAlbumes(): void {
     if (!this.artistaId) {
       this.isLoading = false;
@@ -59,23 +83,18 @@ export class AlbumesPreviewComponent implements OnInit {
 
     this.albumService.obtenerAlbumesPorArtista(this.artistaId).subscribe({
       next: (albumes: AlbumDTO[]) => {
-        console.log('✅ Álbumes cargados:', albumes);
-        console.log('🎨 Nombre artista a usar:', this.nombreArtista);
-
         this.albumes = albumes.map((album: AlbumDTO) => ({
           id: album.idAlbum,
           nombre: album.tituloAlbum,
-          artista: this.nombreArtista || 'Artista Desconocido', // ✅ USAR nombreArtista
+          artista: this.nombreArtista || 'Artista desconocido',
           tipo: 'álbum' as const,
           imagen: album.urlPortada || 'https://via.placeholder.com/300x300?text=Sin+Portada'
         }));
 
-        console.log('💿 Primer álbum mapeado:', this.albumes[0]);
-
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Error al cargar álbumes:', error);
+        console.error('Error al cargar álbumes:', error);
         this.errorMessage = 'No se pudieron cargar los álbumes';
         this.albumes = [];
         this.isLoading = false;
@@ -83,26 +102,35 @@ export class AlbumesPreviewComponent implements OnInit {
     });
   }
 
+  /**
+   * Navega a la vista para subir un nuevo álbum.
+   */
   onAddAlbum(): void {
     this.router.navigate([`/perfil/subir-album`]);
   }
 
+  /**
+   * Gestiona el evento de clic sobre un álbum del carrusel.
+   * @param item Álbum seleccionado.
+   */
   onItemClick(item: CarouselItem): void {
-    console.log('Álbum clickeado:', item);
     this.router.navigate([`/album/${item.id}`]);
   }
 
+  /**
+   * Inicia la reproducción de un álbum completo.
+   * Carga la lista de pistas, establece la playlist y reproduce la primera canción.
+   * Además, registra la reproducción si el usuario está autenticado.
+   *
+   * @param item Álbum seleccionado para reproducción.
+   */
   onPlayClick(item: CarouselItem): void {
-    console.log('Reproducir álbum:', item);
-    // Cargar el álbum completo desde la API usando el core service
     this.coreAlbumService.getAlbumById(item.id.toString()).subscribe({
       next: (album) => {
         if (album.trackList && album.trackList.length > 0) {
-          // Establecer playlist con todas las canciones del álbum
           this.playerService.setPlaylist(album.trackList);
-          // Reproducir la primera canción con auto-play
           this.playerService.playSong(album.trackList[0], true);
-          // Registrar reproducción solo si hay sesión
+
           if (this.authState.isAuthenticated()) {
             this.coreSongService.registerPlay(album.trackList[0].id).subscribe({
               error: (err) => console.error('Error registering play:', err)

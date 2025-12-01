@@ -1,22 +1,13 @@
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-blue-50 py-8 px-4 sm:px-6 lg:px-8">
   <div class="max-w-7xl mx-auto">
 
     <!-- Header -->
     <div class="mb-8">
-      <button
-        (click)="volverAPerfil()"
-        class="group flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-200 mb-6">
-        <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 group-hover:border-primary flex items-center justify-center transition-all duration-200">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-          </svg>
-        </div>
-        <span class="font-medium">Volver</span>
-      </button>
+      <app-back-button class="mb-6"></app-back-button>
 
-      <div class="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <div class="flex items-center gap-3 mb-2">
+      <div class="flex flex-col gap-4 bg-white/80 border border-blue-100 rounded-2xl shadow-sm px-6 py-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="flex items-start gap-4">
             <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg">
               @if (isArtista()) {
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,31 +19,64 @@
                 </svg>
               }
             </div>
-            <h1 class="text-3xl font-bold text-gray-900">
-              @if (isArtista()) {
-                Gestión de Cobros
-              } @else {
-                Gestión de Pagos
-              }
-            </h1>
+            <div>
+              <div class="flex flex-wrap items-baseline gap-3">
+                <h1 class="text-3xl font-bold text-gray-900 leading-tight">
+                  @if (isArtista()) {
+                    Gestión de Cobros
+                  } @else {
+                    Gestión de Pagos
+                  }
+                </h1>
+                <span class="inline-flex items-center gap-2 rounded-full bg-blue-50 text-primary px-3 py-1 text-sm font-semibold border border-blue-100 leading-none">
+                  <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                  {{ metodosPago().length }} método{{ metodosPago().length !== 1 ? 's' : '' }} registrado{{ metodosPago().length !== 1 ? 's' : '' }}
+                </span>
+              </div>
+              <p class="text-gray-600 mt-1">
+                @if (isArtista()) {
+                  Administra tus métodos de cobro para recibir pagos por tus contenidos
+                } @else {
+                  Administra tus métodos de pago para comprar contenidos
+                }
+              </p>
+            </div>
           </div>
-          <p class="text-gray-600 ml-15">
-            @if (isArtista()) {
-              Administra tus métodos de cobro para recibir pagos por tus contenidos
-            } @else {
-              Administra tus métodos de pago para comprar contenidos
-            }
-          </p>
-        </div>
 
-        <button
-          (click)="abrirModal()"
-          class="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
-          Añadir Método
-        </button>
+          <div class="flex flex-wrap items-center gap-3">
+            @if (isArtista()) {
+              <div class="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                <button
+                  (click)="cambiarVista('metodos')"
+                  [class.bg-white]="vistaActual() === 'metodos'"
+                  [class.shadow-sm]="vistaActual() === 'metodos'"
+                  [class.text-primary]="vistaActual() === 'metodos'"
+                  [class.font-semibold]="vistaActual() === 'metodos'"
+                  class="px-4 py-2 rounded-md transition-all text-sm">
+                  Métodos
+                </button>
+                <button
+                  (click)="cambiarVista('cobros')"
+                  [class.bg-white]="vistaActual() === 'cobros'"
+                  [class.shadow-sm]="vistaActual() === 'cobros'"
+                  [class.text-primary]="vistaActual() === 'cobros'"
+                  [class.font-semibold]="vistaActual() === 'cobros'"
+                  class="px-4 py-2 rounded-md transition-all text-sm">
+                  Historial
+                </button>
+              </div>
+            }
+
+            <button
+              (click)="abrirModal()"
+              class="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full hover:bg-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+              Añadir Método
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -81,159 +105,548 @@
       </div>
     } @else {
 
-      <!-- Lista de Métodos -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-
-      <!-- Header de la sección -->
-      <div class="px-6 py-5 bg-blue-900 border-b border-blue-800">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-            @if (isArtista()) {
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-              </svg>
+      <!-- Vista de Métodos -->
+      @if (vistaActual() === 'metodos') {
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+          <!-- Contenido -->
+          <div class="p-6">
+            @if (metodosPago().length === 0) {
+              <!-- Estado vacío -->
+              <div class="text-center py-16">
+                <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
+                  @if (isArtista()) {
+                    <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                  } @else {
+                    <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                  }
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">
+                  @if (isArtista()) {
+                    No tienes métodos de cobro registrados
+                  } @else {
+                    No tienes métodos de pago registrados
+                  }
+                </h3>
+                <button
+                  (click)="abrirModal()"
+                  class="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                  </svg>
+                  Añadir Primer Método
+                </button>
+              </div>
             } @else {
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-              </svg>
-            }
-          </div>
-          <div>
-            <h2 class="text-xl font-semibold text-white">
-              @if (isArtista()) {
-                Mis Métodos de Cobro
-              } @else {
-                Mis Métodos de Pago
-              }
-            </h2>
-            <p class="text-sm text-white/80 mt-0.5">
-              {{ metodosPago().length }} método{{ metodosPago().length !== 1 ? 's' : '' }} registrado{{ metodosPago().length !== 1 ? 's' : '' }}
-            </p>
-          </div>
-        </div>
-      </div>
+              <!-- Grid de métodos -->
+              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                @for (metodo of metodosPago(); track $index) {
+                  <div class="group relative border border-blue-900 hover:border-primary rounded-xl p-6 transition-all duration-300 bg-white overflow-hidden">
 
-        <!-- Contenido -->
-        <div class="p-6 border border-blue-900 rounded-b-xl">
-          @if (metodosPago().length === 0) {
-            <!-- Estado vacío -->
-            <div class="text-center py-16">
-              <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
-                @if (isArtista()) {
-                  <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                  </svg>
-                } @else {
-                  <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                  </svg>
+                    <!-- Header de la tarjeta -->
+                    <div class="relative flex items-start justify-between mb-5">
+                      <div class="flex items-center gap-3 flex-1">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <app-payment-icon [type]="getTipo(metodo)" size="lg" class="text-white"></app-payment-icon>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="font-bold text-gray-900 capitalize text-lg truncate">
+                            {{ getTipo(metodo) }}
+                          </p>
+                          <p class="text-sm text-gray-500 truncate font-medium">
+                            {{ getPropietario(metodo) }}
+                          </p>
+                        </div>
+                      </div>
+                      <div class="w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50"></div>
+                    </div>
+
+                    <!-- Información detallada -->
+                    <div class="relative space-y-4 mb-5">
+                      <!-- Dirección -->
+                      <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                        <div class="flex items-start gap-2 mb-2">
+                          <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          </svg>
+                          <p class="font-semibold text-gray-700 text-sm">Dirección</p>
+                        </div>
+                        <p class="text-xs text-gray-600 leading-relaxed ml-6">{{ getDireccion(metodo) }}</p>
+                      </div>
+
+                      <!-- Detalles específicos del método -->
+                      <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                        <div class="flex items-start gap-2 mb-2">
+                          <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                          <p class="font-semibold text-gray-700 text-sm">
+                            {{ getTituloDetalle(getTipo(metodo)) }}
+                          </p>
+                        </div>
+                        <p class="text-sm font-mono bg-white px-3 py-2 rounded border border-blue-200 ml-6 text-gray-800 font-semibold">
+                          {{ getDetalle(metodo) }}
+                        </p>
+                      </div>
+
+                      <!-- Fechas -->
+                      @if (metodo.fechaCreacion) {
+                        <div class="flex items-center gap-2 text-xs text-gray-400 pt-2">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                          </svg>
+                          Creado: {{ metodo.fechaCreacion }}
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="relative pt-4 border-t border-gray-100">
+                      <button
+                        type="button"
+                        (click)="eliminarMetodo(metodo)"
+                        class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
                 }
               </div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">
-                @if (isArtista()) {
-                  No tienes métodos de cobro registrados
-                } @else {
-                  No tienes métodos de pago registrados
-                }
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Dashboard de Cobros -->
+      @if (isArtista() && vistaActual() === 'cobros') {
+        <div class="space-y-6">
+
+          <!-- Tarjetas de Resumen -->
+          @if (totales()) {
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- Total Ingresos -->
+              <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-semibold opacity-90">Total Ingresos</h3>
+                  <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <p class="text-3xl font-bold">{{ formatearMonto(totales()!.totalIngresos) }}</p>
+              </div>
+
+              <!-- Total Pendiente -->
+              <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-semibold opacity-90">Pendiente de Cobro</h3>
+                  <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <p class="text-3xl font-bold">{{ formatearMonto(totales()!.totalPendiente) }}</p>
+              </div>
+
+              <!-- Total Pagado -->
+              <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-semibold opacity-90">Total Pagado</h3>
+                  <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <p class="text-3xl font-bold">{{ formatearMonto(totales()!.totalPagado) }}</p>
+              </div>
+            </div>
+          }
+
+          <!-- Panel de Filtros -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Filtros de Búsqueda
               </h3>
               <button
-                (click)="abrirModal()"
-                class="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                (click)="limpiarFiltros()"
+                class="text-sm text-primary hover:text-blue-700 font-semibold flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
-                Añadir Primer Método
+                Limpiar Filtros
               </button>
             </div>
-          } @else {
-            <!-- Grid de métodos -->
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              @for (metodo of metodosPago(); track $index) {
-                <div class="group relative border border-blue-900 hover:border-primary rounded-xl p-6 transition-all duration-300 bg-white overflow-hidden">
 
-                  <!-- Header de la tarjeta -->
-                  <div class="relative flex items-start justify-between mb-5">
-                    <div class="flex items-center gap-3 flex-1">
-                      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                        <app-payment-icon [type]="getTipo(metodo)" size="lg" class="text-white"></app-payment-icon>
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <p class="font-bold text-gray-900 capitalize text-lg truncate">
-                          {{ getTipo(metodo) }}
-                        </p>
-                        <p class="text-sm text-gray-500 truncate font-medium">
-                          {{ getPropietario(metodo) }}
-                        </p>
-                      </div>
-                    </div>
-                    <div class="w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50"></div>
-                  </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Estado -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Estado</label>
+                <select
+                  [(ngModel)]="filtros().estado"
+                  (change)="aplicarFiltros({ estado: filtros().estado })"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option [value]="undefined">Todos los estados</option>
+                  @for (estado of estadosDisponibles; track estado) {
+                    <option [value]="estado">{{ estado }}</option>
+                  }
+                </select>
+              </div>
 
-                  <!-- Información detallada -->
-                  <div class="relative space-y-4 mb-5">
-                    <!-- Dirección -->
-                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                      <div class="flex items-start gap-2 mb-2">
-                        <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <!-- Tipo de Cobro -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Cobro</label>
+                <select
+                  [(ngModel)]="filtros().tipoCobro"
+                  (change)="aplicarFiltros({ tipoCobro: filtros().tipoCobro })"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option [value]="undefined">Todos los tipos</option>
+                  @for (tipo of tiposCobro; track tipo) {
+                    <option [value]="tipo">{{ tipo }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Tipo de Contenido -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Contenido</label>
+                <select
+                  [(ngModel)]="filtros().tipoContenido"
+                  (change)="aplicarFiltros({ tipoContenido: filtros().tipoContenido })"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option [value]="undefined">Todos</option>
+                  @for (tipo of tiposContenido; track tipo) {
+                    <option [value]="tipo">{{ tipo }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Mes -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Mes</label>
+                <select
+                  [(ngModel)]="filtros().mes"
+                  (change)="aplicarFiltros({ mes: filtros().mes })"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option [value]="undefined">Todos los meses</option>
+                  @for (mes of getMesesDelAnio(); track mes) {
+                    <option [value]="mes">{{ mes }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Año -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Año</label>
+                <select
+                  [(ngModel)]="filtros().anio"
+                  (change)="aplicarFiltros({ anio: filtros().anio })"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option [value]="undefined">Todos los años</option>
+                  @for (anio of getAniosDisponibles(); track anio) {
+                    <option [value]="anio">{{ anio }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Monto Mínimo -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Monto Mínimo (€)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  [(ngModel)]="filtros().montoMinimo"
+                  (change)="aplicarFiltros({ montoMinimo: filtros().montoMinimo })"
+                  placeholder="0.00"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+              </div>
+
+              <!-- Monto Máximo -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Monto Máximo (€)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  [(ngModel)]="filtros().montoMaximo"
+                  (change)="aplicarFiltros({ montoMaximo: filtros().montoMaximo })"
+                  placeholder="999.99"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+              </div>
+
+              <!-- Ordenar Por -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Ordenar Por</label>
+                <select
+                  [(ngModel)]="filtros().ordenarPor"
+                  (change)="aplicarFiltros({ ordenarPor: filtros().ordenarPor })"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option value="FECHA">Fecha</option>
+                  <option value="MONTO">Monto</option>
+                </select>
+              </div>
+
+              <!-- Dirección -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
+                <select
+                  [(ngModel)]="filtros().direccion"
+                  (change)="aplicarFiltros({ direccion: filtros().direccion })"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option value="DESC">Descendente</option>
+                  <option value="ASC">Ascendente</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje de Pago Automático -->
+          @if (totales() && totales()!.totalPendiente > 0) {
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <h3 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                    <span>Cobros Pendientes</span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+                      {{ formatearMonto(totales()!.totalPendiente) }}
+          </span>
+                  </h3>
+                  <div class="space-y-2">
+                    <p class="text-sm text-gray-700">
+                      <span class="font-semibold text-blue-700">Los pagos se procesan automáticamente el día 1 de cada mes</span> a través del método de cobro predeterminado.
+                    </p>
+                    @if (!metodoPredeterminado()) {
+                      <div class="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                        <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                         </svg>
-                        <p class="font-semibold text-gray-700 text-sm">Dirección</p>
-                      </div>
-                      <p class="text-xs text-gray-600 leading-relaxed ml-6">{{ getDireccion(metodo) }}</p>
-                    </div>
-
-                    <!-- Detalles específicos del método -->
-                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                      <div class="flex items-start gap-2 mb-2">
-                        <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <p class="font-semibold text-gray-700 text-sm">
-                          {{ getTituloDetalle(getTipo(metodo)) }}
+                        <p class="text-sm text-red-800 font-semibold">
+                          Debes establecer un método de cobro predeterminado para recibir los pagos automáticos.
                         </p>
-                      </div>
-                      <p class="text-sm font-mono bg-white px-3 py-2 rounded border border-blue-200 ml-6 text-gray-800 font-semibold">
-                        {{ getDetalle(metodo) }}
-                      </p>
-                    </div>
-
-                    <!-- Fechas -->
-                    @if (metodo.fechaCreacion) {
-                      <div class="flex items-center gap-2 text-xs text-gray-400 pt-2">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        Creado: {{ metodo.fechaCreacion }}
                       </div>
                     }
                   </div>
+                </div>
+              </div>
+            </div>
+          }
 
-                  <!-- Acciones -->
-                  <div class="relative pt-4 border-t border-gray-100">
-                    <button
-                      type="button"
-                      (click)="eliminarMetodo(metodo)"
-                      class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-sm">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                      Eliminar
-                    </button>
+          <!-- Tabla de Cobros -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Historial de Cobros</h3>
+                @if (cobrosData()) {
+                  <span class="text-sm text-gray-600">
+                    {{ cobrosData()!.totalElementos }} cobro{{ cobrosData()!.totalElementos !== 1 ? 's' : '' }} encontrado{{ cobrosData()!.totalElementos !== 1 ? 's' : '' }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            @if (isLoadingCobros()) {
+              <div class="text-center py-16">
+                <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-100 border-t-primary"></div>
+                <p class="text-gray-600 mt-4 font-medium">Cargando cobros...</p>
+              </div>
+            } @else if (cobrosData() && cobrosData()!.cobros.length === 0) {
+              <div class="text-center py-16">
+                <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                  </svg>
+                </div>
+                <p class="text-gray-600 font-medium">No se encontraron cobros con los filtros seleccionados</p>
+              </div>
+            } @else if (cobrosData()) {
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tipo</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Contenido</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Monto</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Método</th>
+                  </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    @for (cobro of cobrosData()!.cobros; track cobro.idCobro) {
+                      <tr class="hover:bg-gray-50 transition-colors">
+                        <!-- Fecha -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm font-medium text-gray-900">
+                            {{ formatearFecha(cobro.fechaCobro) }}
+                          </div>
+                          @if (cobro.fechaPago) {
+                            <div class="text-xs text-gray-500">
+                              Pagado: {{ formatearFecha(cobro.fechaPago) }}
+                            </div>
+                          }
+                        </td>
+
+                        <!-- Tipo -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+                                [ngClass]="{
+                                  'bg-blue-100 text-blue-800': cobro.tipoCobro === 'COMPRA',
+                                  'bg-purple-100 text-purple-800': cobro.tipoCobro === 'REPRODUCCION'
+                                }">
+                            @if (cobro.tipoCobro === 'COMPRA') {
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                              </svg>
+                            } @else {
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                              </svg>
+                            }
+                            {{ cobro.tipoCobro }}
+                          </span>
+                        </td>
+
+                        <!-- Contenido -->
+                        <td class="px-6 py-4">
+                          <div class="text-sm">
+                            <div class="font-medium text-gray-900">{{ cobro.tituloContenido || 'Sin título' }}</div>
+                            <div class="text-gray-500 text-xs">{{ cobro.tipoContenido }}</div>
+                            @if (cobro.reproduccionesAcumuladas) {
+                              <div class="text-gray-500 text-xs">
+                                {{ cobro.reproduccionesAcumuladas }} reproducciones
+                              </div>
+                            }
+                          </div>
+                        </td>
+
+                        <!-- Descripción -->
+                        <td class="px-6 py-4">
+                          <div class="text-sm text-gray-600 max-w-xs">
+                            {{ cobro.descripcion || '-' }}
+                          </div>
+                        </td>
+
+                        <!-- Monto -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm font-bold text-gray-900">
+                            {{ formatearMonto(cobro.monto) }}
+                          </div>
+                        </td>
+
+                        <!-- Estado -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+                                [ngClass]="{
+                                  'bg-amber-100 text-amber-800': cobro.estado === 'PENDIENTE',
+                                  'bg-green-100 text-green-800': cobro.estado === 'PAGADO',
+                                  'bg-red-100 text-red-800': cobro.estado === 'CANCELADO'
+                                }">
+                            @if (cobro.estado === 'PENDIENTE') {
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                              </svg>
+                            } @else if (cobro.estado === 'PAGADO') {
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                              </svg>
+                            } @else {
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                              </svg>
+                            }
+                            {{ cobro.estado }}
+                          </span>
+                        </td>
+
+                        <!-- Método de Cobro -->
+                        <td class="px-6 py-4">
+                          <div class="text-sm font-semibold text-gray-900">
+                            {{ getNombreMetodoCobro(cobro) }}
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Paginación -->
+              @if (cobrosData()!.totalPaginas > 1) {
+                <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                      Página {{ cobrosData()!.paginaActual }} de {{ cobrosData()!.totalPaginas }}
+                    </div>
+                    <div class="flex gap-2">
+                      <button
+                        (click)="cambiarPagina(cobrosData()!.paginaActual - 1)"
+                        [disabled]="cobrosData()!.paginaActual === 1"
+                        class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        Anterior
+                      </button>
+                      <button
+                        (click)="cambiarPagina(cobrosData()!.paginaActual + 1)"
+                        [disabled]="cobrosData()!.paginaActual === cobrosData()!.totalPaginas"
+                        class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        Siguiente
+                      </button>
+                    </div>
                   </div>
                 </div>
               }
-            </div>
-          }
-        </div>
-      </div>
 
+              <!-- Resumen en el footer -->
+              <div class="px-6 py-4 bg-blue-50 border-t border-blue-100">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span class="text-gray-600">Total en esta página:</span>
+                    <span class="ml-2 font-bold text-gray-900">
+                      {{ formatearMonto(calcularTotalPagina(cobrosData()!.cobros)) }}
+                    </span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600">Pendiente (filtrado):</span>
+                    <span class="ml-2 font-bold text-amber-700">
+                      {{ formatearMonto(cobrosData()!.montoPendiente) }}
+                    </span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600">Pagado (filtrado):</span>
+                    <span class="ml-2 font-bold text-green-700">
+                      {{ formatearMonto(cobrosData()!.montoPagado) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+        </div>
     }
+    }
+
+    <!-- Modal -->
 
     <!-- Modal -->
     @if (mostrarModal()) {
       <app-add-payment-method-modal
-        [isArtista]="isArtista()"xq
+        [isArtista]="isArtista()"
         (closeModal)="cerrarModal()"
         (metodoCreado)="onMetodoCreado()">
       </app-add-payment-method-modal>

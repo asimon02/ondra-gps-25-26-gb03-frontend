@@ -139,13 +139,13 @@
 
           <!-- Botones -->
           <div class="flex gap-3">
-            <button
-              type="button"
-              (click)="volverAtras()"
+            <app-back-button
+              class="flex-1"
+              [block]="true"
               [disabled]="isSubmitting()"
-              class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50">
-              Volver
-            </button>
+              [disableAutoNav]="true"
+              (back)="volverPasoAnterior()"
+            ></app-back-button>
 
             <button
               type="button"

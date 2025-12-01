@@ -1,5 +1,3 @@
-// src/app/features/user-profile/components/editable-field/editable-field.component.ts
-
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,35 +13,85 @@ import { switchMap } from 'rxjs/operators';
   styleUrls: ['./editable-field.component.scss']
 })
 export class EditableFieldComponent {
+  /**
+   * Etiqueta mostrada para el campo editable.
+   */
   @Input() label: string = '';
+
+  /**
+   * Valor actual del campo.
+   */
   @Input() value: string = '';
+
+  /**
+   * Nombre del campo que será actualizado en el backend.
+   */
   @Input() fieldName: string = '';
+
+  /**
+   * ID del usuario propietario del perfil.
+   */
   @Input() userId!: number;
-  @Input() artistaId?: number;  // ✅ NUEVO
+
+  /**
+   * ID del artista, si aplica. Permite editar campos pertenecientes a la tabla Artistas.
+   */
+  @Input() artistaId?: number;
+
+  /**
+   * Indica si el campo editable debe renderizarse como un textarea.
+   */
   @Input() isTextarea: boolean = false;
+
+  /**
+   * Evento emitido tras actualizar el perfil y recibir la versión completa actualizada.
+   */
   @Output() fieldUpdated = new EventEmitter<UserProfile>();
 
+  /**
+   * Estado que indica si el campo está en modo edición.
+   */
   isEditing = false;
+
+  /**
+   * Valor temporal del campo durante la edición.
+   */
   editedValue = '';
+
+  /**
+   * Indica si se está realizando una operación de guardado.
+   */
   isSaving = false;
 
-  // ✅ Campos que pertenecen a la tabla Artistas
+  /**
+   * Lista de campos que pertenecen a la entidad Artista.
+   */
   private camposArtista = ['nombreArtistico', 'biografiaArtistico', 'fotoPerfilArtistico'];
 
   constructor(private userProfileService: UserProfileService) {}
 
+  /**
+   * Activa el modo edición para el campo.
+   */
   startEditing(): void {
     this.isEditing = true;
     this.editedValue = this.value || '';
   }
 
+  /**
+   * Cancela la edición y restaura el valor original.
+   */
   cancelEditing(): void {
     this.isEditing = false;
     this.editedValue = '';
   }
 
+  /**
+   * Guarda el valor editado y envía la actualización al backend.
+   * Se determina automáticamente si debe actualizarse el perfil de usuario
+   * o el perfil de artista.
+   */
   saveChanges(): void {
-    // Permitir biografía vacía, pero no otros campos
     if (this.editedValue.trim() === '' && this.fieldName !== 'biografiaArtistico') {
       alert('El campo no puede estar vacío');
       return;
@@ -56,37 +104,33 @@ export class EditableFieldComponent {
 
     this.isSaving = true;
     const updateData = { [this.fieldName]: this.editedValue };
-
-    // ✅ Decidir qué endpoint usar según el campo
     const isArtistaField = this.camposArtista.includes(this.fieldName);
 
     if (isArtistaField && this.artistaId) {
-      // Editar campos de artista
-      this.userProfileService.editarPerfilArtista(this.artistaId, updateData).pipe(
-        // Después de editar artista, recargar perfil completo
-        switchMap(() => this.userProfileService.obtenerPerfil(this.userId))
-      ).subscribe({
-        next: (updatedProfile) => {
-          this.fieldUpdated.emit(updatedProfile);
-          this.isEditing = false;
-          this.isSaving = false;
-        },
-        error: (error) => {
-          console.error('Error al actualizar campo de artista:', error);
-          alert('Error al actualizar el campo');
-          this.isSaving = false;
-        }
-      });
+      // Actualizar campo perteneciente a la entidad Artista
+      this.userProfileService.editarPerfilArtista(this.artistaId, updateData)
+        .pipe(switchMap(() => this.userProfileService.obtenerPerfil(this.userId)))
+        .subscribe({
+          next: (updatedProfile) => {
+            this.fieldUpdated.emit(updatedProfile);
+            this.isEditing = false;
+            this.isSaving = false;
+          },
+          error: () => {
+            alert('Error al actualizar el campo');
+            this.isSaving = false;
+          }
+        });
+
     } else {
-      // Editar campos de usuario
+      // Actualizar campo de usuario
       this.userProfileService.editarPerfilUsuario(this.userId, updateData).subscribe({
         next: (updatedProfile) => {
           this.fieldUpdated.emit(updatedProfile);
           this.isEditing = false;
           this.isSaving = false;
         },
-        error: (error) => {
-          console.error('Error al actualizar campo de usuario:', error);
+        error: () => {
           alert('Error al actualizar el campo');
           this.isSaving = false;
         }

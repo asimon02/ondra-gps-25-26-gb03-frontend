@@ -5,27 +5,41 @@ import { AuthService } from '../../core/services/auth.service';
 import { AuthStateService } from '../../core/services/auth-state.service';
 
 /**
- * Interceptor que maneja el refresh automático de tokens expirados
- * Evita múltiples llamadas simultáneas de refresh
+ * Interceptor encargado de gestionar la renovación automática del token
+ * cuando expira y evitar múltiples solicitudes simultáneas de refresh.
  */
 
-// Estado compartido para evitar múltiples refreshes simultáneos
+/**
+ * Indica si un proceso de refresh de token está en ejecución.
+ */
 let isRefreshing = false;
+
+/**
+ * Estado compartido para almacenar el token renovado
+ * y permitir a otras solicitudes esperar su actualización.
+ */
 let refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
+/**
+ * Interceptor que captura errores 401 relacionados con expiración de token
+ * y ejecuta el proceso de renovación si corresponde.
+ *
+ * @param req Petición HTTP original.
+ * @param next Siguiente manejador en la cadena de interceptores.
+ * @returns Observable con la respuesta HTTP o un error propagado.
+ */
 export const tokenRefreshInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const authStateService = inject(AuthStateService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Solo manejar errores 401 con TOKEN_EXPIRED
-      if (error.status === 401 && error.error?.error === 'TOKEN_EXPIRED') {
-        console.log('🔄 Token expirado detectado');
 
-        // Si ya estamos renovando, esperar a que termine
+      // Manejo exclusivo de errores 401 con indicador de token expirado
+      if (error.status === 401 && error.error?.error === 'TOKEN_EXPIRED') {
+
+        // Si ya existe un proceso de refresh, otras solicitudes esperan
         if (isRefreshing) {
-          console.log('⏳ Esperando renovación en curso...');
           return refreshTokenSubject.pipe(
             filter(token => token !== null),
             take(1),
@@ -33,15 +47,12 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (req, next) => {
           );
         }
 
-        // Iniciar proceso de renovación
+        // Inicia el proceso de renovación
         isRefreshing = true;
         refreshTokenSubject.next(null);
 
-        console.log('🔄 Iniciando renovación de token...');
-
         return authService.refreshToken().pipe(
           switchMap(() => {
-            console.log('✅ Token renovado exitosamente');
             const newToken = authStateService.getFullAuthToken();
 
             isRefreshing = false;
@@ -50,12 +61,11 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (req, next) => {
             return retryRequestWithNewToken(req, next, newToken!);
           }),
           catchError((refreshError) => {
-            console.error('❌ Error al renovar token:', refreshError);
+            console.error('Error al renovar token:', refreshError);
 
             isRefreshing = false;
             refreshTokenSubject.next(null);
 
-            // Cerrar sesión si falla el refresh
             authService.logout();
 
             return throwError(() => refreshError);
@@ -63,26 +73,31 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (req, next) => {
         );
       }
 
-      // Otros errores se propagan sin modificar
+      // Otros errores se propagan sin intervenir
       return throwError(() => error);
     })
   );
 };
 
 /**
- * Reintenta una petición con el nuevo token
+ * Reintenta una solicitud HTTP utilizando un nuevo token.
+ *
+ * @param req Petición original que falló por token expirado.
+ * @param next Manejador siguiente del interceptor.
+ * @param newToken Token renovado que será agregado a la cabecera Authorization.
+ * @returns Observable con la reejecución de la solicitud.
  */
 function retryRequestWithNewToken(
   req: HttpRequest<any>,
   next: any,
   newToken: string
 ): Observable<any> {
+
   const clonedRequest = req.clone({
     setHeaders: {
       Authorization: newToken
     }
   });
 
-  console.log('🔁 Reintentando petición con nuevo token:', req.url);
   return next(clonedRequest);
 }

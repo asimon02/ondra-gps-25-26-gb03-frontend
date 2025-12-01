@@ -1,7 +1,5 @@
-// src/app/features/user-profile/user-profile.component.ts
-
 import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthStateService } from '../../core/services/auth-state.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -21,7 +19,13 @@ import { CancionesPreviewComponent } from './components/canciones-preview/cancio
 import { AlbumesPreviewComponent } from './components/albumes-preview/albumes-preview.component';
 import { LeaveArtistModalComponent } from './components/leave-artist-modal/leave-artist-modal.component';
 import { SocialNetworksSectionComponent } from './components/social-networks-section/social-networks-section.component';
+import { BackButtonComponent } from '../../shared/components/back-button/back-button.component';
 
+/**
+ * Componente principal del perfil de usuario.
+ * Gestiona la visualización y edición del perfil, incluyendo información personal,
+ * estadísticas de seguimiento, y funcionalidades específicas para artistas.
+ */
 @Component({
   selector: 'app-user-profile',
   standalone: true,
@@ -36,20 +40,38 @@ import { SocialNetworksSectionComponent } from './components/social-networks-sec
     FavoritesPreviewComponent,
     CancionesPreviewComponent,
     AlbumesPreviewComponent,
-    LeaveArtistModalComponent
+    LeaveArtistModalComponent,
+    BackButtonComponent
   ],
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.scss']
 })
 export class UserProfileComponent implements OnInit {
+  /** Información del perfil del usuario actual */
   userProfile: UserProfile | null = null;
+
+  /** Estadísticas de seguidores y seguidos del usuario */
   estadisticas: EstadisticasSeguimiento | null = null;
+
+  /** Indicador de carga inicial del perfil */
   isLoading = true;
+
+  /** Tipo de modal actualmente abierto */
   modalType: ModalType = null;
+
+  /** Control de visibilidad del modal de dejar de ser artista */
   mostrarLeaveArtistModal = false;
+
+  /** Control de visibilidad del modal de convertirse en artista */
   mostrarBecomeArtistModal = false;
+
+  /** Total de reproducciones del artista */
   totalReproducciones: number | null = null;
+
+  /** Indicador de carga de reproducciones */
   cargandoReproducciones = false;
+
+  /** Indicador de actualización del perfil en progreso */
   actualizandoPerfil = signal(false);
 
   constructor(
@@ -57,7 +79,6 @@ export class UserProfileComponent implements OnInit {
     private authStateService: AuthStateService,
     private authService: AuthService,
     private userProfileService: UserProfileService,
-    private location: Location,
     private seguimientoService: UserSeguimientoService,
     private songService: SongService
   ) {}
@@ -73,29 +94,27 @@ export class UserProfileComponent implements OnInit {
     }
   }
 
+  /**
+   * Verifica si el usuario actual es un artista
+   */
   get isArtist(): boolean {
     return this.userProfile?.tipoUsuario === 'ARTISTA';
   }
 
+  /**
+   * Carga el perfil completo del usuario
+   * Incluye manejo de renovación de token en caso de expiración
+   * @param idUsuario ID del usuario a cargar
+   */
   cargarPerfil(idUsuario: number): void {
     this.userProfileService.obtenerPerfil(idUsuario).subscribe({
       next: (profile) => {
         this.userProfile = profile;
 
-        console.log('📋 Perfil cargado:', {
-          idUsuario: profile.idUsuario,
-          idArtista: profile.idArtista,
-          tipoUsuario: profile.tipoUsuario,
-          nombreArtistico: profile.nombreArtistico,
-          isArtist: this.isArtist
-        });
-
-        // ✅ Cargar reproducciones si es artista
         if (this.isArtist && profile.idArtista) {
-          console.log(`🎵 Cargando reproducciones para artista ID: ${profile.idArtista}`);
           this.cargarReproducciones(profile.idArtista);
         } else if (this.isArtist && !profile.idArtista) {
-          console.error('⚠️ El usuario es ARTISTA pero no tiene idArtista');
+          console.error('El usuario es ARTISTA pero no tiene idArtista');
         }
 
         this.isLoading = false;
@@ -104,14 +123,12 @@ export class UserProfileComponent implements OnInit {
         console.error('Error al cargar perfil:', error);
 
         if (error.status === 401 && error.error?.error === 'TOKEN_EXPIRED') {
-          console.log('🔄 Token expirado, intentando renovar...');
           this.authService.refreshToken().subscribe({
             next: () => {
-              console.log('✅ Token renovado, recargando perfil...');
               this.cargarPerfil(idUsuario);
             },
             error: (refreshError) => {
-              console.error('❌ Error al renovar token:', refreshError);
+              console.error('Error al renovar token:', refreshError);
               alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
               this.authService.logout();
               this.router.navigate(['/login']);
@@ -124,6 +141,10 @@ export class UserProfileComponent implements OnInit {
     });
   }
 
+  /**
+   * Carga las estadísticas de seguimiento del usuario
+   * @param idUsuario ID del usuario
+   */
   cargarEstadisticas(idUsuario: number): void {
     this.seguimientoService.obtenerEstadisticas(idUsuario).subscribe({
       next: (stats) => {
@@ -136,40 +157,41 @@ export class UserProfileComponent implements OnInit {
   }
 
   /**
-   * ✅ Carga las reproducciones totales del artista desde el endpoint real
+   * Carga el total de reproducciones del artista
+   * @param idArtista ID del artista
    */
   cargarReproducciones(idArtista: number): void {
     this.cargandoReproducciones = true;
-    console.log(`🎵 Consultando estadísticas del artista ${idArtista}...`);
 
     this.songService.obtenerEstadisticasArtista(idArtista).subscribe({
       next: (estadisticas) => {
         this.totalReproducciones = estadisticas.totalReproducciones;
         this.cargandoReproducciones = false;
-        console.log(`✅ Total reproducciones cargadas: ${this.totalReproducciones}`);
       },
       error: (error) => {
-        console.error('❌ Error al cargar reproducciones:', error);
+        console.error('Error al cargar reproducciones:', error);
         this.totalReproducciones = 0;
         this.cargandoReproducciones = false;
       }
     });
   }
 
+  /**
+   * Recarga las estadísticas de seguimiento del usuario actual
+   */
   recargarEstadisticas(): void {
     if (this.userProfile?.idUsuario) {
       this.cargarEstadisticas(this.userProfile.idUsuario);
     }
   }
 
+  /**
+   * Maneja la actualización del perfil desde componentes hijos
+   * Actualiza el estado local y sincroniza con el servicio de autenticación
+   * @param updatedProfile Perfil actualizado
+   */
   onProfileUpdated(updatedProfile: UserProfile): void {
     this.userProfile = updatedProfile;
-
-    console.log('🔄 Perfil actualizado:', {
-      idUsuario: updatedProfile.idUsuario,
-      idArtista: updatedProfile.idArtista,
-      tipoUsuario: updatedProfile.tipoUsuario
-    });
 
     this.authStateService.updateUserInfo({
       nombreUsuario: updatedProfile.nombreUsuario,
@@ -183,30 +205,58 @@ export class UserProfileComponent implements OnInit {
     });
   }
 
+  /**
+   * Abre un modal específico
+   * @param type Tipo de modal a abrir
+   */
   openModal(type: ModalType): void {
     this.modalType = type;
   }
 
+  /**
+   * Cierra el modal actualmente abierto
+   */
   closeModal(): void {
     this.modalType = null;
   }
 
-  goBack(): void {
-    this.location.back();
-  }
-
+  /**
+   * Navega a la vista de historial de pagos
+   */
   navegarAPagos(): void {
     this.router.navigate(['/perfil/pagos']);
   }
 
+  /**
+   * Navega al configurador de preferencias en modo reconfiguración
+   */
+  navegarAPreferencias(): void {
+    this.router.navigate(['/preferencias/configurar'], {
+      queryParams: {
+        reconfig: 'true',
+        from: 'perfil'
+      }
+    });
+  }
+
+  /**
+   * Abre el modal para dejar de ser artista
+   */
   abrirLeaveArtistModal(): void {
     this.mostrarLeaveArtistModal = true;
   }
 
+  /**
+   * Cierra el modal para dejar de ser artista
+   */
   cerrarLeaveArtistModal(): void {
     this.mostrarLeaveArtistModal = false;
   }
 
+  /**
+   * Maneja el evento de abandono del rol de artista
+   * Recarga el perfil y estadísticas actualizados
+   */
   onArtistLeft(): void {
     this.cerrarLeaveArtistModal();
     if (this.userProfile?.idUsuario) {
@@ -215,29 +265,31 @@ export class UserProfileComponent implements OnInit {
     }
   }
 
+  /**
+   * Abre el modal para convertirse en artista
+   */
   abrirBecomeArtistModal(): void {
     this.mostrarBecomeArtistModal = true;
   }
 
+  /**
+   * Cierra el modal para convertirse en artista
+   */
   cerrarBecomeArtistModal(): void {
     this.mostrarBecomeArtistModal = false;
   }
 
+  /**
+   * Maneja la creación exitosa del perfil de artista
+   * Actualiza el perfil local o recarga desde el servidor si es necesario
+   * @param perfilActualizado Perfil actualizado del nuevo artista, o null si requiere recarga
+   */
   onArtistCreated(perfilActualizado: UserProfile | null): void {
     this.cerrarBecomeArtistModal();
 
     if (perfilActualizado) {
-      // Usar el perfil actualizado que ya tenemos
       this.userProfile = perfilActualizado;
 
-      console.log('✅ Perfil de artista actualizado localmente:', {
-        idUsuario: perfilActualizado.idUsuario,
-        idArtista: perfilActualizado.idArtista,
-        tipoUsuario: perfilActualizado.tipoUsuario,
-        nombreArtistico: perfilActualizado.nombreArtistico
-      });
-
-      // Actualizar estadísticas y reproducciones si es artista
       if (perfilActualizado.idUsuario) {
         this.cargarEstadisticas(perfilActualizado.idUsuario);
 
@@ -246,14 +298,11 @@ export class UserProfileComponent implements OnInit {
         }
       }
 
-      // Scroll hacia arriba para ver los cambios
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }, 100);
     } else if (this.userProfile?.idUsuario) {
-      // Fallback: recargar desde el servidor con un pequeño delay
       this.isLoading = true;
-      console.log('⚠️ No se recibió perfil actualizado, recargando desde servidor...');
 
       setTimeout(() => {
         this.cargarPerfil(this.userProfile!.idUsuario);

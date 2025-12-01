@@ -1,15 +1,13 @@
-<!-- src/app/features/user-profile/components/albumes-preview/albumes-preview.component.html -->
-
 <div *ngIf="!isLoading" class="h-full flex flex-col">
   <app-content-carousel
     [items]="albumes"
     [title]="isOwnProfile ? 'Mis Álbumes' : 'Álbumes'"
     icon="album"
     [showAddButton]="isOwnProfile"
+    [showPlayButton]="false"
     [emptyMessage]="isOwnProfile ? 'Aún no has subido ningún álbum' : 'Este artista aún no ha publicado álbumes'"
     (addClick)="onAddAlbum()"
-    (itemClick)="onItemClick($event)"
-    (playClick)="onPlayClick($event)">
+    (itemClick)="onItemClick($event)">
   </app-content-carousel>
 </div>
 

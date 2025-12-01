@@ -43,6 +43,7 @@ export class AddPaymentMethodModalComponent implements OnInit {
     this.initializeForm();
   }
 
+  /** Inicializa el formulario y sus suscripciones */
   private initializeForm(): void {
     this.paymentForm = this.fb.group({
       metodo: ['', [Validators.required]],
@@ -51,78 +52,52 @@ export class AddPaymentMethodModalComponent implements OnInit {
       pais: ['España', [Validators.required]],
       provincia: ['', [Validators.required]],
       codigoPostal: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-      // Campos específicos de tarjeta
       numeroTarjeta: [''],
       fechaCaducidad: [''],
       cvv: [''],
-      // Campos específicos de otros métodos
       emailPaypal: [''],
       telefonoBizum: [''],
       iban: ['']
     });
 
-    // ✅ SOLUCIÓN: Usar { emitEvent: false } para evitar bucles infinitos
+    // Actualiza las validaciones dinámicamente según el método seleccionado
     this.paymentForm.get('metodo')?.valueChanges.subscribe((metodo: TipoMetodoPago) => {
       this.metodoSeleccionado.set(metodo);
       this.actualizarValidaciones(metodo);
     });
   }
 
+  /** Aplica validaciones según el método de pago seleccionado */
   private actualizarValidaciones(metodo: TipoMetodoPago): void {
-    // Resetear todas las validaciones de campos específicos
-    this.paymentForm.get('numeroTarjeta')?.clearValidators();
-    this.paymentForm.get('fechaCaducidad')?.clearValidators();
-    this.paymentForm.get('cvv')?.clearValidators();
-    this.paymentForm.get('emailPaypal')?.clearValidators();
-    this.paymentForm.get('telefonoBizum')?.clearValidators();
-    this.paymentForm.get('iban')?.clearValidators();
+    // Limpiar todas las validaciones específicas primero
+    ['numeroTarjeta', 'fechaCaducidad', 'cvv', 'emailPaypal', 'telefonoBizum', 'iban'].forEach(key => {
+      this.paymentForm.get(key)?.clearValidators();
+    });
 
-    // Aplicar validaciones según el método
     switch (metodo) {
       case 'tarjeta':
-        this.paymentForm.get('numeroTarjeta')?.setValidators([
-          Validators.required,
-          Validators.pattern(/^\d{16}$/)
-        ]);
-        this.paymentForm.get('fechaCaducidad')?.setValidators([
-          Validators.required,
-          Validators.pattern(/^(0[1-9]|1[0-2])\/\d{2}$/)
-        ]);
-        this.paymentForm.get('cvv')?.setValidators([
-          Validators.required,
-          Validators.pattern(/^\d{3,4}$/)
-        ]);
+        this.paymentForm.get('numeroTarjeta')?.setValidators([Validators.required, Validators.pattern(/^\d{16}$/)]);
+        this.paymentForm.get('fechaCaducidad')?.setValidators([Validators.required, Validators.pattern(/^(0[1-9]|1[0-2])\/\d{2}$/)]);
+        this.paymentForm.get('cvv')?.setValidators([Validators.required, Validators.pattern(/^\d{3,4}$/)]);
         break;
-
       case 'paypal':
-        this.paymentForm.get('emailPaypal')?.setValidators([
-          Validators.required,
-          Validators.email
-        ]);
+        this.paymentForm.get('emailPaypal')?.setValidators([Validators.required, Validators.email]);
         break;
-
       case 'bizum':
-        this.paymentForm.get('telefonoBizum')?.setValidators([
-          Validators.required,
-          Validators.pattern(/^(\+34)?[6-9]\d{8}$/)
-        ]);
+        this.paymentForm.get('telefonoBizum')?.setValidators([Validators.required, Validators.pattern(/^(\+34)?[6-9]\d{8}$/)]);
         break;
-
       case 'transferencia':
-        this.paymentForm.get('iban')?.setValidators([
-          Validators.required,
-          this.ibanValidator()
-        ]);
+        this.paymentForm.get('iban')?.setValidators([Validators.required, this.ibanValidator()]);
         break;
     }
 
-    // ✅ SOLUCIÓN: Actualizar solo los campos específicos, NO todos los controles
-    // Esto evita el bucle infinito
+    // Actualizar solo los campos específicos para evitar bucles infinitos
     ['numeroTarjeta', 'fechaCaducidad', 'cvv', 'emailPaypal', 'telefonoBizum', 'iban'].forEach(key => {
       this.paymentForm.get(key)?.updateValueAndValidity({ emitEvent: false });
     });
   }
 
+  /** Validador de IBAN para España */
   private ibanValidator() {
     return (control: AbstractControl): { [key: string]: any } | null => {
       if (!control.value) return null;
@@ -132,6 +107,7 @@ export class AddPaymentMethodModalComponent implements OnInit {
     };
   }
 
+  /** Envía el formulario según sea usuario o artista */
   onSubmit(): void {
     if (this.paymentForm.invalid) {
       this.paymentForm.markAllAsTouched();
@@ -159,7 +135,6 @@ export class AddPaymentMethodModalComponent implements OnInit {
         return;
       }
 
-      // ✅ DTO para artista (sin campos de tarjeta)
       const dto = {
         metodoPago: formValue.metodo.toUpperCase(),
         propietario: formValue.propietario,
@@ -174,18 +149,15 @@ export class AddPaymentMethodModalComponent implements OnInit {
 
       this.paymentService.crearMetodoCobro(idArtista, dto).subscribe({
         next: () => {
-          console.log('✅ Método de cobro creado');
           this.isSubmitting.set(false);
           this.metodoCreado.emit();
         },
         error: (error) => {
-          console.error('❌ Error al crear método de cobro:', error);
           this.errorMessage.set(error.error?.message || 'Error al crear el método de cobro');
           this.isSubmitting.set(false);
         }
       });
     } else {
-      // ✅ DTO para usuario (con todos los campos)
       const dto = {
         metodoPago: formValue.metodo.toUpperCase(),
         propietario: formValue.propietario,
@@ -203,12 +175,10 @@ export class AddPaymentMethodModalComponent implements OnInit {
 
       this.paymentService.crearMetodoPago(user.idUsuario, dto).subscribe({
         next: () => {
-          console.log('✅ Método de pago creado');
           this.isSubmitting.set(false);
           this.metodoCreado.emit();
         },
         error: (error) => {
-          console.error('❌ Error al crear método de pago:', error);
           this.errorMessage.set(error.error?.message || 'Error al crear el método de pago');
           this.isSubmitting.set(false);
         }
@@ -220,6 +190,7 @@ export class AddPaymentMethodModalComponent implements OnInit {
     this.closeModal.emit();
   }
 
+  /** Retorna el nombre legible del método de pago */
   getNombreMetodo(metodo: TipoMetodoPago): string {
     const nombres: { [key: string]: string } = {
       'tarjeta': 'Tarjeta',
@@ -230,7 +201,7 @@ export class AddPaymentMethodModalComponent implements OnInit {
     return nombres[metodo] || metodo;
   }
 
-  // Getters para validación
+  /** Getters para validaciones del formulario */
   get metodo() { return this.paymentForm.get('metodo'); }
   get propietario() { return this.paymentForm.get('propietario'); }
   get direccion() { return this.paymentForm.get('direccion'); }

@@ -1,5 +1,3 @@
-// src/app/features/user-profile/components/become-artist-modal/become-artist-modal.component.ts
-
 import { Component, Output, EventEmitter, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
@@ -14,53 +12,98 @@ import { AuthStateService } from '../../../../core/services/auth-state.service';
   styleUrls: ['./become-artist-modal.component.scss']
 })
 export class BecomeArtistModalComponent {
+  /**
+   * Evento que notifica al componente padre que el modal debe cerrarse.
+   */
   @Output() closeModal = new EventEmitter<void>();
+
+  /**
+   * Evento emitido cuando se ha creado un perfil artístico exitosamente
+   * o cuando el proceso finaliza sin datos disponibles.
+   */
   @Output() artistaCreado = new EventEmitter<any>();
 
   private fb = inject(FormBuilder);
   private userProfileService = inject(UserProfileService);
   private authState = inject(AuthStateService);
 
+  /**
+   * Formulario de creación del perfil artístico.
+   */
   artistForm!: FormGroup;
+
+  /**
+   * Indica si se está enviando el formulario.
+   */
   isSubmitting = signal(false);
+
+  /**
+   * Mensaje de error relacionado con la creación del perfil artístico.
+   */
   errorMessage = signal<string | null>(null);
+
+  /**
+   * Archivo seleccionado para la foto de perfil del artista.
+   */
   selectedFile = signal<File | null>(null);
+
+  /**
+   * URL generada para previsualización de la imagen seleccionada.
+   */
   previewUrl = signal<string | null>(null);
 
-  readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  /**
+   * Tamaño máximo permitido para la imagen (5MB).
+   */
+  readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+  /**
+   * Tipos MIME permitidos para la imagen de perfil.
+   */
   readonly ALLOWED_FORMATS = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
   constructor() {
     this.initializeForm();
   }
 
+  /**
+   * Inicializa el formulario con sus controles y validadores.
+   */
   private initializeForm(): void {
     this.artistForm = this.fb.group({
-      nombreArtistico: ['', [
-        Validators.required,
-        Validators.minLength(2),
-        Validators.maxLength(50),
-        this.noSpecialCharsValidator
-      ]],
-      biografiaArtistico: ['', [
-        Validators.required,
-        Validators.minLength(50),
-        Validators.maxLength(500)
-      ]],
+      nombreArtistico: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(2),
+          Validators.maxLength(50),
+          this.noSpecialCharsValidator
+        ]
+      ],
+      biografiaArtistico: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(50),
+          Validators.maxLength(500)
+        ]
+      ],
       fotoPerfilArtistico: [null, [Validators.required]]
     });
   }
 
+  /**
+   * Validador para evitar caracteres especiales no permitidos.
+   */
   private noSpecialCharsValidator(control: AbstractControl): { [key: string]: any } | null {
     if (!control.value) return null;
     const forbidden = /[<>{}[\]\\\/]/.test(control.value);
     return forbidden ? { specialChars: true } : null;
   }
 
-  // ============================================
-  // MANEJO DE ARCHIVO
-  // ============================================
-
+  /**
+   * Maneja la selección de un archivo de imagen y valida formato y tamaño.
+   */
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -88,30 +131,42 @@ export class BecomeArtistModalComponent {
     reader.onload = (e) => {
       this.previewUrl.set(e.target?.result as string);
     };
+
     reader.readAsDataURL(file);
   }
 
+  /**
+   * Activa el input de tipo archivo para seleccionar una imagen.
+   */
   triggerFileInput(): void {
     document.getElementById('file-input')?.click();
   }
 
+  /**
+   * Limpia la selección del archivo actual.
+   */
   removeFile(): void {
     this.clearFileSelection();
     this.artistForm.patchValue({ fotoPerfilArtistico: null });
     this.artistForm.get('fotoPerfilArtistico')?.updateValueAndValidity();
   }
 
+  /**
+   * Restablece los estados asociados a la imagen seleccionada.
+   */
   private clearFileSelection(): void {
     this.selectedFile.set(null);
     this.previewUrl.set(null);
+
     const input = document.getElementById('file-input') as HTMLInputElement;
-    if (input) input.value = '';
+    if (input) {
+      input.value = '';
+    }
   }
 
-  // ============================================
-  // SUBMIT
-  // ============================================
-
+  /**
+   * Gestiona el envío del formulario y realiza la creación del perfil artístico.
+   */
   onSubmit(): void {
     if (this.artistForm.invalid) {
       this.artistForm.markAllAsTouched();
@@ -135,65 +190,64 @@ export class BecomeArtistModalComponent {
 
     this.userProfileService.convertirseEnArtista(file, artistaData).subscribe({
       next: (artistaResponse) => {
-        console.log('✅ Perfil de artista creado:', artistaResponse);
-
-        // Actualizar el usuario en AuthState
         const usuarioActual = this.authState.currentUser();
+
         if (usuarioActual?.idUsuario) {
           this.userProfileService.obtenerPerfil(usuarioActual.idUsuario).subscribe({
             next: (perfilCompleto) => {
-              // Actualizar AuthState con el perfil completo
               this.authState.updateUser(perfilCompleto as any);
-              console.log('✅ Perfil actualizado en AuthState:', perfilCompleto);
-
-              // Emitir el perfil completo para que el padre lo use directamente
               this.artistaCreado.emit(perfilCompleto);
               this.close();
               this.isSubmitting.set(false);
             },
-            error: (err) => {
-              console.error('⚠️ Error al recargar perfil:', err);
-              // Aun con error, emitir null para que el padre intente recargar desde el servidor
+            error: () => {
               this.artistaCreado.emit(null);
               this.close();
               this.isSubmitting.set(false);
             }
           });
         } else {
-          console.warn('⚠️ No hay usuario actual en AuthState');
           this.artistaCreado.emit(null);
           this.close();
           this.isSubmitting.set(false);
         }
       },
       error: (error) => {
-        console.error('❌ Error al crear perfil de artista:', error);
         this.errorMessage.set(error.error?.message || 'Error al crear perfil de artista');
         this.isSubmitting.set(false);
       }
     });
   }
 
-  // ============================================
-  // UTILIDADES
-  // ============================================
-
+  /**
+   * Cierra el modal emitiendo el evento correspondiente.
+   */
   close(): void {
     this.closeModal.emit();
   }
 
+  /** Getters de conveniencia para controles del formulario */
   get nombreArtistico() { return this.artistForm.get('nombreArtistico'); }
   get biografiaArtistico() { return this.artistForm.get('biografiaArtistico'); }
   get fotoPerfilArtistico() { return this.artistForm.get('fotoPerfilArtistico'); }
 
+  /**
+   * Indica si un campo del formulario es inválido y ya fue tocado.
+   */
   isFieldInvalid(field: AbstractControl | null): boolean {
     return !!(field && field.invalid && field.touched);
   }
 
+  /**
+   * Verifica si un campo presenta un error de un tipo específico.
+   */
   hasError(field: AbstractControl | null, errorType: string): boolean {
     return !!(field && field.hasError(errorType) && field.touched);
   }
 
+  /**
+   * Obtiene el número de caracteres introducidos en un campo del formulario.
+   */
   getCharCount(fieldName: string): number {
     return this.artistForm.get(fieldName)?.value?.length || 0;
   }

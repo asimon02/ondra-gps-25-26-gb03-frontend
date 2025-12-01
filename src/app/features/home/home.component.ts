@@ -6,6 +6,10 @@ import { HomeService } from './services/home.service';
 import { ArtistaDTO } from '../../shared/models/artista.model';
 import { StatsGlobales } from '../../shared/models/stats.model';
 
+/**
+ * Componente principal de la página Home.
+ * Coordina la carga de secciones: hero, estadísticas y artistas en tendencia.
+ */
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -16,17 +20,30 @@ import { StatsGlobales } from '../../shared/models/stats.model';
 export class HomeComponent implements OnInit {
   private homeService = inject(HomeService);
 
-  // Signals para datos reactivos
+  /** Lista de artistas en tendencia */
   artistas = signal<ArtistaDTO[]>([]);
+
+  /** Estadísticas globales de la plataforma */
   stats = signal<StatsGlobales | null>(null);
+
+  /** Indicador de carga general */
   isLoading = signal(true);
+
+  /** Mensaje de error al cargar estadísticas */
   errorStats = signal<string | null>(null);
+
+  /** Mensaje de error al cargar artistas */
   errorArtistas = signal<string | null>(null);
 
   ngOnInit(): void {
     this.cargarDatos();
   }
 
+  /**
+   * Carga datos principales para la página Home:
+   * - Estadísticas globales
+   * - Artistas en tendencia (limitados a 4)
+   */
   private cargarDatos(): void {
     this.isLoading.set(true);
 
@@ -36,22 +53,20 @@ export class HomeComponent implements OnInit {
         this.stats.set(stats);
       },
       error: (err) => {
-        console.error('Error al cargar estadísticas:', err);
         this.errorStats.set('No se pudieron cargar las estadísticas');
       }
     });
 
-    // Cargar 4 artistas trending
+    // Cargar artistas en tendencia
     this.homeService.obtenerArtistasTrending(4).subscribe({
       next: (artistas) => {
         this.artistas.set(artistas);
         this.isLoading.set(false);
       },
-      error: (err) => {
-        console.error('Error al cargar artistas:', err);
+      error: () => {
         this.errorArtistas.set('No se pudieron cargar los artistas');
         this.isLoading.set(false);
-      }
-    });
-  }
+      }
+    });
+  }
 }

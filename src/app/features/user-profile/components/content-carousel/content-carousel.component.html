@@ -1,5 +1,3 @@
-<!-- src/app/features/user-profile/components/content-carousel/content-carousel.component.html -->
-
 <div>
   <!-- Header -->
   <div class="flex items-center justify-between mb-4">
@@ -86,7 +84,7 @@
           </div>
 
           <!-- Overlay con play -->
-          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center justify-center">
+          <div *ngIf="showPlayButton" class="absolute inset-0 bg-black/40 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center justify-center">
             <button
               (click)="onPlayClick($event, item)"
               class="bg-primary text-white rounded-full p-3 transform scale-90 group-hover/item:scale-100 transition-transform shadow-lg hover:bg-blue-700"
@@ -108,7 +106,7 @@
             {{ item.artista }}
           </p>
           <p *ngIf="item.precio !== undefined" class="text-sm font-semibold text-gray-900">
-            ${{ item.precio }}
+            {{ formatPrice(item.precio) }}
           </p>
           <p *ngIf="item.tipo" class="text-xs text-neutral capitalize">
             {{ item.tipo }}

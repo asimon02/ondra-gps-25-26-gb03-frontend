@@ -1,27 +1,16 @@
-<!-- src/app/features/user-profile/user-profile.component.html -->
+<div class="min-h-screen bg-blue-50">
+  <div class="container mx-auto px-4 pb-12 max-w-7xl">
+    <div class="pt-6">
+      <app-back-button class="mb-6"></app-back-button>
+    </div>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-  <!-- Botón Volver -->
-  <div class="container mx-auto px-4 py-6">
-    <button
-      (click)="goBack()"
-      class="group flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-200">
-      <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 group-hover:border-primary flex items-center justify-center transition-all duration-200 shadow-sm group-hover:shadow-md">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-      </div>
-      <span class="font-medium">Volver</span>
-    </button>
-  </div>
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center min-h-[400px]">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
 
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="flex justify-center items-center min-h-[400px]">
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-
-  <!-- Profile Content -->
-  <div *ngIf="!isLoading && userProfile" class="container mx-auto px-4 pb-12 max-w-7xl">
+    <!-- Profile Content -->
+    <div *ngIf="!isLoading && userProfile">
 
     <!-- Layout de 2 columnas: Profile Header (izq) + Info Personal (der) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -49,7 +38,7 @@
       </div>
     </div>
 
-    <!-- ✅ NUEVA SECCIÓN: Redes Sociales (solo para artistas en su propio perfil) -->
+    <!-- Redes Sociales (solo para artistas en su propio perfil) -->
     <div
       *ngIf="isArtist && userProfile.idArtista"
       class="mb-6">
@@ -88,12 +77,12 @@
           </div>
         </div>
 
-        <!-- Métodos de Pago (mismo ancho que personal-info) -->
+        <!-- Métodos de Cobro (mismo ancho que personal-info) -->
         <div class="lg:col-span-2 flex">
           <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6 flex flex-col justify-between w-full">
             <div class="mb-4">
-              <h2 class="text-xl font-semibold text-gray-900 mb-2">Métodos de Pago</h2>
-              <p class="text-gray-600">Administra tus métodos de pago y consulta tu historial</p>
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">Métodos de Cobro</h2>
+              <p class="text-gray-600">Administra tus métodos de cobro y consulta tus ingresos</p>
             </div>
             <button
               (click)="navegarAPagos()"
@@ -101,7 +90,7 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
               </svg>
-              Gestionar Pagos
+              Gestionar Cobros
             </button>
           </div>
         </div>
@@ -195,8 +184,32 @@
         </div>
       </ng-container>
 
-    </div> <!-- Cierre de space-y-6 -->
+      <!-- ============================================ -->
+      <!-- BOTÓN DE PREFERENCIAS MUSICALES - ANCHO COMPLETO -->
+      <!-- ============================================ -->
+      <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+        <div class="flex flex-col gap-4">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
+              Preferencias Musicales
+            </h2>
+            <p class="text-gray-600">
+              Personaliza tu experiencia seleccionando tus géneros favoritos para recibir mejores recomendaciones
+            </p>
+          </div>
+          <button
+            (click)="navegarAPreferencias()"
+            class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+            </svg>
+            Configurar Mis Preferencias Musicales
+          </button>
+        </div>
+      </div>
 
+    </div> <!-- Cierre de space-y-6 -->
+    </div> <!-- Cierre de space-y-6 -->
   </div> <!-- Cierre de container -->
 
   <!-- Modal de Seguidos/Seguidores -->

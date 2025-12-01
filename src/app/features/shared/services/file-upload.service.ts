@@ -1,5 +1,3 @@
-// src/app/features/shared/services/file-upload.service.ts
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -11,8 +9,8 @@ import {
 } from '../models/multimedia.model';
 
 /**
- * Servicio para gestión de archivos multimedia con Cloudinary
- * Alineado con MultimediaController del backend
+ * Servicio para gestión de archivos multimedia con Cloudinary.
+ * Funciona junto con MultimediaController del backend.
  */
 @Injectable({
   providedIn: 'root'
@@ -21,17 +19,17 @@ export class FileUploadService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apis.contenidos}/multimedia`;
 
-  // ========== ENDPOINTS DE AUDIO ==========
+  // ==================== AUDIO ====================
 
   /**
-   * POST /api/multimedia/cancion/audio
    * Sube un archivo de audio para una canción
+   * POST /api/multimedia/cancion/audio
    *
    * Formatos permitidos: MP3, WAV, FLAC, M4A, OGG
    * Tamaño máximo: 50MB
    *
    * @param file Archivo de audio
-   * @returns AudioResponseDTO con URL, duración y formato
+   * @returns Observable con la información del audio subido
    */
   subirAudioCancion(file: File): Observable<AudioResponseDTO> {
     const formData = new FormData();
@@ -43,18 +41,18 @@ export class FileUploadService {
     );
   }
 
-  // ========== ENDPOINTS DE PORTADAS ==========
+  // ==================== PORTADAS ====================
 
   /**
-   * POST /api/multimedia/cancion/portada
    * Sube una imagen de portada para una canción
+   * POST /api/multimedia/cancion/portada
    *
    * Formatos permitidos: JPG, PNG, WEBP
    * Tamaño máximo: 5MB
    * Transformación: 1000x1000px
    *
    * @param file Archivo de imagen
-   * @returns PortadaResponseDTO con URL de la imagen
+   * @returns Observable con la información de la portada
    */
   subirPortadaCancion(file: File): Observable<PortadaResponseDTO> {
     const formData = new FormData();
@@ -67,15 +65,15 @@ export class FileUploadService {
   }
 
   /**
-   * POST /api/multimedia/album/portada
    * Sube una imagen de portada para un álbum
+   * POST /api/multimedia/album/portada
    *
    * Formatos permitidos: JPG, PNG, WEBP
    * Tamaño máximo: 5MB
    * Transformación: 1000x1000px
    *
    * @param file Archivo de imagen
-   * @returns PortadaResponseDTO con URL de la imagen
+   * @returns Observable con la información de la portada
    */
   subirPortadaAlbum(file: File): Observable<PortadaResponseDTO> {
     const formData = new FormData();
@@ -87,14 +85,14 @@ export class FileUploadService {
     );
   }
 
-  // ========== ENDPOINTS DE ELIMINACIÓN ==========
+  // ==================== ELIMINACIÓN ====================
 
   /**
-   * DELETE /api/multimedia?url={fileUrl}
    * Elimina un archivo multimedia de Cloudinary
+   * DELETE /api/multimedia?url={fileUrl}
    *
    * @param fileUrl URL completa del archivo a eliminar
-   * @returns SuccessfulResponseDTO con resultado de la operación
+   * @returns Observable con el resultado de la operación
    */
   eliminarArchivo(fileUrl: string): Observable<SuccessfulResponseDTO> {
     return this.http.delete<SuccessfulResponseDTO>(
@@ -102,34 +100,32 @@ export class FileUploadService {
     );
   }
 
-  // ========== MÉTODOS DE UTILIDAD ==========
+  // ==================== VALIDACIONES ====================
 
   /**
-   * Valida que un archivo sea una imagen válida
+   * Valida que un archivo sea una imagen permitida
+   * @param file Archivo a validar
+   * @returns Objeto con propiedad `valido` y posible `error`
    */
   validarImagen(file: File): { valido: boolean; error?: string } {
     const formatosPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const tamanoMaximo = 5 * 1024 * 1024; // 5MB
 
     if (!formatosPermitidos.includes(file.type)) {
-      return {
-        valido: false,
-        error: 'Formato no permitido. Use JPG, PNG o WEBP'
-      };
+      return { valido: false, error: 'Formato no permitido. Use JPG, PNG o WEBP' };
     }
 
     if (file.size > tamanoMaximo) {
-      return {
-        valido: false,
-        error: 'La imagen no puede superar los 5MB'
-      };
+      return { valido: false, error: 'La imagen no puede superar los 5MB' };
     }
 
     return { valido: true };
   }
 
   /**
-   * Valida que un archivo sea un audio válido
+   * Valida que un archivo sea un audio permitido
+   * @param file Archivo a validar
+   * @returns Objeto con propiedad `valido` y posible `error`
    */
   validarAudio(file: File): { valido: boolean; error?: string } {
     const formatosPermitidos = [
@@ -142,17 +138,11 @@ export class FileUploadService {
     const tamanoMaximo = 50 * 1024 * 1024; // 50MB
 
     if (!formatosPermitidos.includes(file.type)) {
-      return {
-        valido: false,
-        error: 'Formato no permitido. Use MP3, WAV, FLAC, M4A u OGG'
-      };
+      return { valido: false, error: 'Formato no permitido. Use MP3, WAV, FLAC, M4A u OGG' };
     }
 
     if (file.size > tamanoMaximo) {
-      return {
-        valido: false,
-        error: 'El audio no puede superar los 50MB'
-      };
+      return { valido: false, error: 'El audio no puede superar los 50MB' };
     }
 
     return { valido: true };

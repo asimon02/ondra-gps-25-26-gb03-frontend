@@ -39,6 +39,7 @@ export class AuthStateService {
   constructor() {
     this.loadFromStorage();
 
+    // Persistir cambios automáticamente en localStorage
     effect(() => {
       const user = this._currentUser();
       const accessToken = this._accessToken();
@@ -106,18 +107,12 @@ export class AuthStateService {
     return this._tokenType();
   }
 
-  /**
-   * Retorna el token completo con el prefijo "Bearer "
-   */
   getFullAuthToken(): string | null {
     const token = this._accessToken();
     const type = this._tokenType();
     return token ? `${type} ${token}` : null;
   }
 
-  /**
-   * Obtiene la información del usuario en formato UserInfo
-   */
   getUserInfo(): UserInfo | null {
     const user = this._currentUser();
     if (!user) return null;
@@ -133,9 +128,6 @@ export class AuthStateService {
     };
   }
 
-  /**
-   * Actualiza información específica del usuario
-   */
   updateUserInfo(updates: Partial<UsuarioDTO>): void {
     const currentUser = this._currentUser();
     if (currentUser) {

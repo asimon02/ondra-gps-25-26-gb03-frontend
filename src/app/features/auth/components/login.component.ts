@@ -7,15 +7,20 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ConfigService } from '../../../core/services/config.service';
 import { AuthStateService } from '../../../core/services/auth-state.service';
 import { GenreService, GeneroDTO } from '../../shared/services/genre.service';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
 declare const google: any;
 
 type FormMode = 'login' | 'register' | 'forgot-password' | 'verify-code' | 'reset-password';
 
+/**
+ * Componente de autenticación que gestiona login, registro y recuperación de contraseña.
+ * Incluye integración con Google Sign-In y verificación de email.
+ */
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
@@ -30,40 +35,70 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   private configService = inject(ConfigService);
   private authState = inject(AuthStateService);
 
+  /** Google Client ID cargado desde la configuración del backend */
   GOOGLE_CLIENT_ID = signal<string | null>(null);
 
-  // ✅ NUEVO: Lista de géneros cargada desde el backend
+  /** Lista de géneros disponibles obtenida desde el backend */
   generos = signal<GeneroDTO[]>([]);
+
+  /** Indicador de carga de géneros */
   generosLoading = signal<boolean>(true);
 
-  // Estado del componente
+  /** Modo actual del formulario */
   formMode = signal<FormMode>('login');
+
+  /** Visibilidad del campo de contraseña */
   showPassword = signal(false);
+
+  /** Visibilidad del campo de confirmación de contraseña */
   showConfirmPassword = signal(false);
+
+  /** Indicador de operación en progreso */
   isLoading = signal(false);
+
+  /** Mensaje de éxito a mostrar al usuario */
   successMessage = signal<string | null>(null);
+
+  /** Mensaje de error a mostrar al usuario */
   errorMessage = signal<string | null>(null);
+
+  /** Indicador de inicialización de Google Sign-In */
   googleInitialized = signal(false);
 
-  // Estado para recuperación de contraseña
+  /** Email utilizado en el proceso de recuperación de contraseña */
   emailRecuperacion = signal<string>('');
+
+  /** Código de verificación para recuperación de contraseña */
   codigoRecuperacion = signal<string>('');
 
-  // Temporizador para reenviar código
+  /** Contador de tiempo restante para reenviar código */
   resendCountdown = signal<number>(0);
   private countdownInterval?: any;
 
-  // Protección contra doble verificación
+  /** Indicador de token de verificación ya procesado */
   private tokenVerificado = signal(false);
+
+  /** Indicador de verificación de token en progreso */
   private verificandoToken = signal(false);
 
-  // Formularios reactivos
+  /** Formulario de inicio de sesión */
   loginForm!: FormGroup;
+
+  /** Formulario de registro */
   registerForm!: FormGroup;
+
+  /** Formulario de recuperación de contraseña */
   forgotPasswordForm!: FormGroup;
+
+  /** Formulario de verificación de código */
   verifyCodeForm!: FormGroup;
+
+  /** Formulario de restablecimiento de contraseña */
   resetPasswordForm!: FormGroup;
 
+  /**
+   * Obtiene la cantidad de géneros seleccionados en el formulario de registro
+   */
   get generosSeleccionadosCount(): number {
     const generos = this.registerForm.get('generosPreferidos')?.value;
     return Array.isArray(generos) ? generos.length : 0;
@@ -72,7 +107,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.initializeForms();
     this.checkVerificationToken();
-    this.cargarConfiguracion(); // ✨ CAMBIO: No llamar directamente initializeGoogleSignIn
+    this.cargarConfiguracion();
     this.cargarGeneros();
   }
 
@@ -88,33 +123,28 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.clearCountdown();
   }
 
-  // ============================================
-  // ✅ NUEVO: CARGA DE GÉNEROS DESDE BACKEND
-  // ============================================
-
+  /**
+   * Carga los géneros disponibles desde el backend
+   */
   private cargarGeneros(): void {
-    console.log('📥 Cargando géneros desde el backend...');
     this.generosLoading.set(true);
 
     this.genreService.obtenerTodosLosGeneros().subscribe({
       next: (generos) => {
         this.generos.set(generos);
         this.generosLoading.set(false);
-        console.log(`✅ ${generos.length} géneros cargados correctamente`);
       },
       error: (err) => {
-        console.error('❌ Error al cargar géneros:', err);
+        console.error('Error al cargar géneros:', err);
         this.generos.set([]);
         this.generosLoading.set(false);
-        // No mostramos error al usuario, solo registramos en consola
       }
     });
   }
 
-  // ============================================
-  // INICIALIZACIÓN DE FORMULARIOS
-  // ============================================
-
+  /**
+   * Inicializa todos los formularios reactivos del componente
+   */
   private initializeForms(): void {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -128,7 +158,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
       tipoUsuario: ['NORMAL', [Validators.required]],
-      generosPreferidos: [[]] // ✅ Ahora almacenará IDs (números)
+      generosPreferidos: [[]]
     }, { validators: this.passwordMatchValidator });
 
     this.forgotPasswordForm = this.fb.group({
@@ -145,6 +175,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     }, { validators: this.passwordMatchValidator });
   }
 
+  /**
+   * Validador personalizado para verificar que las contraseñas coincidan
+   */
   private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password');
     const confirmPassword = control.get('confirmPassword');
@@ -156,32 +189,28 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     return password.value === confirmPassword.value ? null : { passwordMismatch: true };
   }
 
-  // ============================================
-  // GOOGLE SIGN-IN
-  // ============================================
-
   /**
-   * ✨ NUEVO: Carga la configuración desde el backend
+   * Carga la configuración pública desde el backend, incluyendo el Google Client ID
    */
   private cargarConfiguracion(): void {
     this.configService.obtenerConfigPublica().subscribe({
       next: (config) => {
         this.GOOGLE_CLIENT_ID.set(config.googleClientId);
-        console.log('✅ Configuración cargada desde backend');
         this.initializeGoogleSignIn();
       },
       error: (err) => {
-        console.error('❌ Error al cargar configuración:', err);
-        // No inicializar Google Sign-In si falla
+        console.error('Error al cargar configuración:', err);
       }
     });
   }
 
+  /**
+   * Inicializa el servicio de Google Sign-In
+   */
   private initializeGoogleSignIn(): void {
-    const clientId = this.GOOGLE_CLIENT_ID(); // ✨ Leer del signal
+    const clientId = this.GOOGLE_CLIENT_ID();
 
     if (!clientId) {
-      console.warn('⚠️ No se pudo cargar Google Client ID');
       return;
     }
 
@@ -190,20 +219,22 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
         clearInterval(checkGoogle);
 
         google.accounts.id.initialize({
-          client_id: clientId, // ✨ Usar variable del signal
+          client_id: clientId,
           callback: (response: any) => this.handleGoogleSignIn(response),
           auto_select: false,
           cancel_on_tap_outside: true
         });
 
         this.googleInitialized.set(true);
-        console.log('✅ Google Sign-In inicializado');
       }
     }, 100);
 
     setTimeout(() => clearInterval(checkGoogle), 10000);
   }
 
+  /**
+   * Renderiza el botón de Google Sign-In en el DOM
+   */
   private renderGoogleButton(): void {
     const buttonContainer = document.getElementById('google-signin-button');
 
@@ -220,13 +251,15 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
             shape: 'rectangular'
           }
         );
-        console.log('✅ Botón de Google renderizado');
       } catch (error) {
         console.error('Error al renderizar botón de Google:', error);
       }
     }
   }
 
+  /**
+   * Re-renderiza el botón de Google Sign-In
+   */
   private rerenderGoogleButton(): void {
     const buttonContainer = document.getElementById('google-signin-button');
     if (buttonContainer) {
@@ -235,6 +268,10 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Maneja la respuesta de autenticación de Google
+   * @param response Respuesta con el credential token de Google
+   */
   handleGoogleSignIn(response: any): void {
     this.ngZone.run(() => {
       if (!response.credential) {
@@ -258,23 +295,19 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ============================================
-  // VERIFICACIÓN DE EMAIL CON PROTECCIÓN
-  // ============================================
-
+  /**
+   * Verifica si existe un token de verificación de email en los parámetros de la URL
+   * Implementa protección contra verificaciones duplicadas
+   */
   private checkVerificationToken(): void {
     this.route.queryParams.subscribe(params => {
       const token = params['token'];
 
       if (token && !this.tokenVerificado() && !this.verificandoToken()) {
-        console.log('🔍 Token de verificación detectado, validando...');
-
         this.verificandoToken.set(true);
 
         this.authService.verificarEmail(token).subscribe({
           next: (message) => {
-            console.log('✅ Token verificado exitosamente');
-
             this.tokenVerificado.set(true);
             this.verificandoToken.set(false);
 
@@ -287,7 +320,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
             });
           },
           error: (err) => {
-            console.error('❌ Error al verificar token:', err);
+            console.error('Error al verificar token:', err);
 
             this.verificandoToken.set(false);
             this.setError(err.message);
@@ -299,7 +332,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         });
       } else if (token && this.tokenVerificado()) {
-        console.log('ℹ️ Token ya verificado previamente, limpiando URL...');
         this.router.navigate(['/login'], {
           replaceUrl: true,
           queryParams: {}
@@ -308,10 +340,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ============================================
-  // RECUPERACIÓN DE CONTRASEÑA (3 PASOS)
-  // ============================================
-
+  /**
+   * Procesa la solicitud de recuperación de contraseña (paso 1)
+   */
   onForgotPassword(): void {
     if (this.forgotPasswordForm.invalid) {
       this.forgotPasswordForm.markAllAsTouched();
@@ -340,6 +371,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Verifica el código de recuperación ingresado (paso 2)
+   */
   onVerifyCode(): void {
     if (this.verifyCodeForm.invalid) {
       this.verifyCodeForm.markAllAsTouched();
@@ -357,6 +391,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoading.set(false);
   }
 
+  /**
+   * Restablece la contraseña con el código verificado (paso 3)
+   */
   onResetPassword(): void {
     if (this.resetPasswordForm.invalid) {
       this.resetPasswordForm.markAllAsTouched();
@@ -389,6 +426,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Reenvía el código de verificación si el contador ha terminado
+   */
   resendCode(): void {
     if (this.resendCountdown() > 0) return;
 
@@ -410,6 +450,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Inicia el contador de 60 segundos para reenviar código
+   */
   private startResendCountdown(): void {
     this.clearCountdown();
     this.resendCountdown.set(60);
@@ -424,6 +467,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 1000);
   }
 
+  /**
+   * Limpia el intervalo del contador de reenvío
+   */
   private clearCountdown(): void {
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval);
@@ -432,10 +478,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resendCountdown.set(0);
   }
 
-  // ============================================
-  // ACCIONES DE FORMULARIOS (LOGIN Y REGISTRO)
-  // ============================================
-
+  /**
+   * Procesa el inicio de sesión con credenciales tradicionales
+   */
   onLogin(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -462,6 +507,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Procesa el registro de un nuevo usuario
+   */
   onRegister(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -481,7 +529,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       tipoUsuario: formValue.tipoUsuario
     }).subscribe({
       next: (usuarioCreado) => {
-        console.log('✅ Usuario registrado:', usuarioCreado);
         this.mostrarMensajeExito();
       },
       error: (err) => {
@@ -491,6 +538,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Muestra mensaje de éxito tras el registro y redirige al login
+   */
   public mostrarMensajeExito(): void {
     this.setSuccess('Registro completado. Revisa tu correo para verificar tu cuenta.');
     this.registerForm.reset({ tipoUsuario: 'NORMAL', generosPreferidos: [] });
@@ -498,6 +548,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoading.set(false);
   }
 
+  /**
+   * Reenvía el correo de verificación de cuenta
+   */
   reenviarVerificacion(): void {
     const email = prompt('Introduce tu email para reenviar la verificación:');
 
@@ -512,12 +565,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ============================================
-  // ✅ ACTUALIZADO: GESTIÓN DE GÉNEROS CON IDs
-  // ============================================
-
   /**
-   * Alterna la selección de un género por su ID
+   * Alterna la selección de un género en el formulario de registro
+   * @param idGenero ID del género a alternar
    */
   toggleGenero(idGenero: number): void {
     const generosControl = this.registerForm.get('generosPreferidos');
@@ -531,17 +581,18 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Verifica si un género está seleccionado por su ID
+   * Verifica si un género está seleccionado
+   * @param idGenero ID del género a verificar
    */
   isGeneroSelected(idGenero: number): boolean {
     const generos: number[] = this.registerForm.get('generosPreferidos')?.value || [];
     return generos.includes(idGenero);
   }
 
-  // ============================================
-  // UTILIDADES
-  // ============================================
-
+  /**
+   * Cambia el modo del formulario y reinicia estados relacionados
+   * @param mode Nuevo modo del formulario
+   */
   changeFormMode(mode: FormMode): void {
     this.formMode.set(mode);
     this.clearMessages();
@@ -553,14 +604,25 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.rerenderGoogleButton(), 100);
   }
 
+  /**
+   * Alterna la visibilidad del campo de contraseña
+   */
   togglePasswordVisibility(): void {
     this.showPassword.update(v => !v);
   }
 
+  /**
+   * Alterna la visibilidad del campo de confirmación de contraseña
+   */
   toggleConfirmPasswordVisibility(): void {
     this.showConfirmPassword.update(v => !v);
   }
 
+  /**
+   * Navega a la ruta correspondiente después del login
+   * Redirige a onboarding si no está completado
+   * @param tipoUsuario Tipo de usuario autenticado
+   */
   private navigateAfterLogin(tipoUsuario: string): void {
     const usuario = this.authState.currentUser();
 
@@ -569,20 +631,17 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Verificar si completó onboarding
     if (!usuario.onboardingCompletado) {
-      console.log('ℹ️ Usuario no ha completado onboarding, redirigiendo a configurar preferencias');
       this.router.navigate(['/preferencias/configurar']);
       return;
     }
 
-    this.router.navigate(['/perfil-info']);
+    this.router.navigate(['/']);
   }
 
-  // ============================================
-  // MÉTODOS DE MENSAJES CON SCROLL AUTOMÁTICO
-  // ============================================
-
+  /**
+   * Desplaza la vista al inicio de la página
+   */
   private scrollToTop(): void {
     window.scrollTo({
       top: 0,
@@ -590,23 +649,37 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Establece un mensaje de éxito y desplaza al inicio
+   * @param message Mensaje a mostrar
+   */
   private setSuccess(message: string): void {
     this.successMessage.set(message);
     this.errorMessage.set(null);
     setTimeout(() => this.scrollToTop(), 100);
   }
 
+  /**
+   * Establece un mensaje de error y desplaza al inicio
+   * @param message Mensaje a mostrar
+   */
   private setError(message: string): void {
     this.errorMessage.set(message);
     this.successMessage.set(null);
     setTimeout(() => this.scrollToTop(), 100);
   }
 
+  /**
+   * Limpia todos los mensajes de éxito y error
+   */
   private clearMessages(): void {
     this.successMessage.set(null);
     this.errorMessage.set(null);
   }
 
+  /**
+   * Reinicia todos los formularios a su estado inicial
+   */
   private resetAllForms(): void {
     this.loginForm.reset();
     this.registerForm.reset({ tipoUsuario: 'NORMAL', generosPreferidos: [] });
@@ -617,10 +690,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.codigoRecuperacion.set('');
     this.clearCountdown();
   }
-
-  // ============================================
-  // GETTERS PARA VALIDACIÓN (PÚBLICOS)
-  // ============================================
 
   get loginEmail() { return this.loginForm.get('email'); }
   get loginPassword() { return this.loginForm.get('password'); }
@@ -638,22 +707,45 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   get resetPassword() { return this.resetPasswordForm.get('password'); }
   get resetConfirmPassword() { return this.resetPasswordForm.get('confirmPassword'); }
 
+  /**
+   * Verifica si un campo tiene errores de validación
+   * @param field Campo a validar
+   */
   isFieldInvalid(field: AbstractControl | null): boolean {
     return !!(field && field.invalid && field.touched);
   }
 
+  /**
+   * Verifica si un campo es válido
+   * @param field Campo a validar
+   */
   isFieldValid(field: AbstractControl | null): boolean {
     return !!(field && field.valid && field.touched);
   }
 
+  /**
+   * Verifica si un campo tiene un error específico
+   * @param field Campo a validar
+   * @param errorType Tipo de error a buscar
+   */
   hasError(field: AbstractControl | null, errorType: string): boolean {
     return !!(field && field.hasError(errorType) && field.touched);
   }
 
+  /**
+   * Verifica si el campo de confirmación de contraseña es inválido
+   * @param confirmField Campo de confirmación
+   * @param form Formulario que contiene el campo
+   */
   isConfirmPasswordInvalid(confirmField: AbstractControl | null, form: FormGroup): boolean {
     return this.isFieldInvalid(confirmField) || !!form.errors?.['passwordMismatch'];
   }
 
+  /**
+   * Verifica si el campo de confirmación de contraseña es válido
+   * @param confirmField Campo de confirmación
+   * @param form Formulario que contiene el campo
+   */
   isConfirmPasswordValid(confirmField: AbstractControl | null, form: FormGroup): boolean {
     return this.isFieldValid(confirmField) && !form.errors?.['passwordMismatch'];
   }

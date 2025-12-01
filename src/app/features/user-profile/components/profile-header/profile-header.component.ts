@@ -1,5 +1,3 @@
-// src/app/features/user-profile/components/profile-header/profile-header.component.ts
-
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserProfile } from '../../models/user-profile.model';
@@ -16,47 +14,94 @@ import { switchMap } from 'rxjs/operators';
   styleUrls: ['./profile-header.component.scss']
 })
 export class ProfileHeaderComponent implements OnInit {
+  /**
+   * Perfil del usuario (público o completo, según el contexto).
+   */
   @Input() userProfile!: UserProfile | UsuarioPublico;
+
+  /**
+   * Estadísticas de seguidores y seguidos del usuario.
+   */
   @Input() estadisticas: EstadisticasSeguimiento | null = null;
+
+  /**
+   * Indica si el perfil visualizado pertenece al usuario autenticado.
+   */
   @Input() isOwnProfile: boolean = true;
+
+  /**
+   * Indica si se está visualizando la versión pública del perfil.
+   */
   @Input() isPublicView: boolean = false;
 
-  // ✅ NUEVOS INPUTS para el botón seguir
+  /**
+   * Indica si el usuario autenticado sigue al perfil.
+   */
   @Input() isFollowing: boolean = false;
+
+  /**
+   * Indica si una acción de seguir/dejar de seguir está en proceso.
+   */
   @Input() isProcessingFollow: boolean = false;
-  @Input() showFollowButton: boolean = false; // Para controlar si se muestra el botón
-  @Input() totalReproducciones: number | null = null; // ✅ NUEVO: Total de reproducciones del artista
 
+  /**
+   * Controla si debe mostrarse el botón de seguir.
+   */
+  @Input() showFollowButton: boolean = false;
+
+  /**
+   * Total de reproducciones del artista.
+   */
+  @Input() totalReproducciones: number | null = null;
+
+  /**
+   * Emite el tipo de modal a abrir: seguidores o seguidos.
+   */
   @Output() openModalEvent = new EventEmitter<ModalType>();
-  @Output() profileUpdated = new EventEmitter<UserProfile>();
-  @Output() followClick = new EventEmitter<void>(); // ✅ NUEVO: Emitir evento de seguir
 
+  /**
+   * Emite cuando el perfil ha sido actualizado.
+   */
+  @Output() profileUpdated = new EventEmitter<UserProfile>();
+
+  /**
+   * Emite cuando se hace clic en seguir/dejar de seguir.
+   */
+  @Output() followClick = new EventEmitter<void>();
+
+  /**
+   * Indica si una foto se está subiendo actualmente.
+   */
   isUploadingPhoto = false;
 
   constructor(private userProfileService: UserProfileService) {}
 
-  ngOnInit(): void {
-    console.log('🔍 UserProfile:', this.userProfile);
-    console.log('🔍 Tipo Usuario:', this.userProfile.tipoUsuario);
-    console.log('🔍 Total Reproducciones:', this.totalReproducciones);
-  }
+  /**
+   * Hook de inicialización.
+   */
+  ngOnInit(): void {}
 
-  // Helper para verificar si es UserProfile (tiene emailUsuario)
+  /**
+   * Determina si el objeto recibido es un UserProfile completo.
+   */
   private isUserProfile(profile: UserProfile | UsuarioPublico): profile is UserProfile {
     return 'emailUsuario' in profile;
   }
 
+  /**
+   * Indica si el usuario tiene foto de perfil.
+   */
   get hasPhoto(): boolean {
     if (this.userProfile.tipoUsuario === 'ARTISTA') {
       const fotoArtista = this.userProfile.fotoPerfilArtistico;
-      if (fotoArtista && fotoArtista.trim() !== '') {
-        return true;
-      }
+      return !!(fotoArtista && fotoArtista.trim() !== '');
     }
-    const fotoNormal = this.userProfile.fotoPerfil;
-    return !!(fotoNormal && fotoNormal.trim() !== '');
+    return !!(this.userProfile.fotoPerfil && this.userProfile.fotoPerfil.trim() !== '');
   }
 
+  /**
+   * Devuelve la foto de perfil a mostrar.
+   */
   get displayPhoto(): string {
     if (this.userProfile.tipoUsuario === 'ARTISTA' && this.userProfile.fotoPerfilArtistico) {
       return this.userProfile.fotoPerfilArtistico;
@@ -64,32 +109,29 @@ export class ProfileHeaderComponent implements OnInit {
     return this.userProfile.fotoPerfil || '';
   }
 
+  /**
+   * Genera las iniciales según el tipo de usuario y los datos disponibles.
+   */
   get userInitials(): string {
     if (this.userProfile.tipoUsuario === 'ARTISTA' && this.userProfile.nombreArtistico) {
-      const nombreArtistico = this.userProfile.nombreArtistico.trim();
-      const parts = nombreArtistico.split(' ').filter(p => p.length > 0);
-
-      if (parts.length >= 2) {
-        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-      } else if (parts.length === 1 && parts[0].length >= 2) {
-        return parts[0].substring(0, 2).toUpperCase();
-      }
+      const parts = this.userProfile.nombreArtistico.trim().split(' ').filter(p => p.length > 0);
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      if (parts.length === 1 && parts[0].length >= 2) return parts[0].substring(0, 2).toUpperCase();
     }
 
     const nombre = (this.userProfile.nombreUsuario || '').trim();
     const apellido = (this.userProfile.apellidosUsuario || '').trim();
 
-    if (nombre && apellido) {
-      return `${nombre[0]}${apellido[0]}`.toUpperCase();
-    } else if (nombre && nombre.length >= 2) {
-      return nombre.substring(0, 2).toUpperCase();
-    } else if (nombre) {
-      return `${nombre[0]}${nombre[0]}`.toUpperCase();
-    }
+    if (nombre && apellido) return `${nombre[0]}${apellido[0]}`.toUpperCase();
+    if (nombre && nombre.length >= 2) return nombre.substring(0, 2).toUpperCase();
+    if (nombre) return `${nombre[0]}${nombre[0]}`.toUpperCase();
 
     return 'U?';
   }
 
+  /**
+   * Devuelve el nombre a mostrar según el tipo de usuario.
+   */
   get displayName(): string {
     if (this.userProfile.tipoUsuario === 'ARTISTA' && this.userProfile.nombreArtistico) {
       return this.userProfile.nombreArtistico;
@@ -97,14 +139,18 @@ export class ProfileHeaderComponent implements OnInit {
     return `${this.userProfile.nombreUsuario} ${this.userProfile.apellidosUsuario}`;
   }
 
+  /**
+   * Indica si el usuario es artista.
+   */
   get isArtist(): boolean {
     return this.userProfile.tipoUsuario === 'ARTISTA';
   }
 
+  /**
+   * Formatea la fecha de registro a mes y año.
+   */
   get memberSince(): string {
-    if (!this.userProfile.fechaRegistro) {
-      return '';
-    }
+    if (!this.userProfile.fechaRegistro) return '';
 
     try {
       let date: Date;
@@ -118,34 +164,33 @@ export class ProfileHeaderComponent implements OnInit {
         date = new Date(this.userProfile.fechaRegistro as any);
       }
 
-      if (isNaN(date.getTime())) {
-        return '';
-      }
+      if (isNaN(date.getTime())) return '';
 
-      return date.toLocaleDateString('es-ES', {
-        month: 'long',
-        year: 'numeric'
-      });
-    } catch (error) {
+      return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    } catch {
       return '';
     }
   }
 
-  // ✅ NUEVO: Formatear números grandes
+  /**
+   * Formatea números grandes (reproducciones).
+   */
   formatNumber(num: number): string {
-    if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M`;
-    } else if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K`;
-    }
+    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
     return num.toString();
   }
 
-  // ✅ NUEVO: Manejar click en seguir
+  /**
+   * Maneja el clic para seguir o dejar de seguir.
+   */
   onFollowClick(): void {
     this.followClick.emit();
   }
 
+  /**
+   * Maneja el clic en la foto para seleccionar un archivo.
+   */
   onPhotoClick(): void {
     if (!this.isOwnProfile || this.isPublicView || !this.isUserProfile(this.userProfile)) {
       return;
@@ -156,17 +201,16 @@ export class ProfileHeaderComponent implements OnInit {
     input.accept = 'image/jpeg,image/png,image/jpg,image/webp';
     input.onchange = (event: any) => {
       const file = event.target.files[0];
-      if (file) {
-        this.uploadPhoto(file);
-      }
+      if (file) this.uploadPhoto(file);
     };
     input.click();
   }
 
+  /**
+   * Sube una foto de perfil y actualiza el perfil del usuario.
+   */
   uploadPhoto(file: File): void {
-    if (!this.isUserProfile(this.userProfile)) {
-      return;
-    }
+    if (!this.isUserProfile(this.userProfile)) return;
 
     if (file.size > 5 * 1024 * 1024) {
       alert('La imagen no puede superar los 5MB');
@@ -187,54 +231,40 @@ export class ProfileHeaderComponent implements OnInit {
 
     uploadObservable.subscribe({
       next: (response) => {
-        console.log('✅ Imagen subida:', response.url);
+        const updateData = this.isArtist
+          ? { fotoPerfilArtistico: response.url }
+          : { fotoPerfil: response.url };
 
-        if (this.isArtist && this.userProfile.idArtista) {
-          const updateData = { fotoPerfilArtistico: response.url };
+        const updateObservable = this.isArtist && this.userProfile.idArtista
+          ? this.userProfileService.editarPerfilArtista(this.userProfile.idArtista, updateData).pipe(
+              switchMap(() => this.userProfileService.obtenerPerfil(this.userProfile.idUsuario))
+            )
+          : this.userProfileService.editarPerfilUsuario(this.userProfile.idUsuario, updateData);
 
-          this.userProfileService.editarPerfilArtista(this.userProfile.idArtista, updateData).pipe(
-            switchMap(() => this.userProfileService.obtenerPerfil(this.userProfile.idUsuario))
-          ).subscribe({
-            next: (updatedProfile: UserProfile) => {
-              this.profileUpdated.emit(updatedProfile);
-              this.isUploadingPhoto = false;
-              alert('Foto de perfil actualizada correctamente');
-            },
-            error: (error: any) => {
-              console.error('Error al actualizar foto de artista:', error);
-              alert('Error al actualizar la foto');
-              this.isUploadingPhoto = false;
-            }
-          });
-        } else {
-          const updateData = { fotoPerfil: response.url };
-
-          this.userProfileService.editarPerfilUsuario(this.userProfile.idUsuario, updateData).subscribe({
-            next: (updatedProfile: UserProfile) => {
-              this.profileUpdated.emit(updatedProfile);
-              this.isUploadingPhoto = false;
-              alert('Foto de perfil actualizada correctamente');
-            },
-            error: (error: any) => {
-              console.error('Error al actualizar foto:', error);
-              alert('Error al actualizar la foto');
-              this.isUploadingPhoto = false;
-            }
-          });
-        }
+        updateObservable.subscribe({
+          next: (updatedProfile: UserProfile) => {
+            this.profileUpdated.emit(updatedProfile);
+            this.isUploadingPhoto = false;
+            alert('Foto de perfil actualizada correctamente');
+          },
+          error: () => {
+            alert('Error al actualizar la foto');
+            this.isUploadingPhoto = false;
+          }
+        });
       },
-      error: (error: any) => {
-        console.error('Error al subir imagen:', error);
+      error: () => {
         alert('Error al subir la imagen');
         this.isUploadingPhoto = false;
       }
     });
   }
 
+  /**
+   * Abre el modal correspondiente, excepto si se intenta ver “seguidos” en perfil de artista.
+   */
   openModal(type: ModalType): void {
-    if (this.isArtist && type === 'seguidos') {
-      return;
-    }
+    if (this.isArtist && type === 'seguidos') return;
     this.openModalEvent.emit(type);
   }
 }

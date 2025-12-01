@@ -1,5 +1,3 @@
-// src/app/services/song.service.ts
-
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
@@ -7,33 +5,56 @@ import { delay, map, switchMap } from 'rxjs/operators';
 import { Song, SongAlbumSummary, SongArtist } from '../models/song.model';
 import { MOCK_SONGS } from '../mocks/mock-songs';
 import { environment } from '../../../enviroments/enviroment';
+import { FavoritosService } from './favoritos.service';
 
 /**
- * Respuesta paginada compatible con Spring Boot y mocks
+ * Respuesta paginada de canciones compatible con Spring Boot y modo mock.
  */
 export interface PaginatedSongsResponse {
+  /** Lista de canciones (formato mock) */
   songs?: Song[];
+  /** Lista de canciones (formato backend) */
   content?: Song[];
-
+  /** Página actual */
   currentPage: number;
+  /** Total de páginas disponibles */
   totalPages: number;
+  /** Total de elementos en el dataset */
   totalElements: number;
+  /** Elementos por página (formato mock) */
   elementsPerPage?: number;
+  /** Tamaño de página (formato backend) */
   size?: number;
 }
 
+/**
+ * Parámetros de consulta para filtrado y ordenamiento de canciones.
+ */
 export interface SongQueryParams {
-  genre?: string; // Cambio: genreId a genre (string directo)
+  /** Nombre del género (legacy) */
+  genre?: string;
+  /** ID del género */
   genreId?: string;
+  /** ID del artista */
   artistId?: string;
+  /** Término de búsqueda */
   search?: string;
+  /** Precio mínimo */
   minPrice?: number;
+  /** Precio máximo */
   maxPrice?: number;
+  /** Criterio de ordenamiento */
   orderBy?: 'most_recent' | 'oldest' | 'most_played' | 'best_rated' | 'price_asc' | 'price_desc';
+  /** Número de página (1-indexed) */
   page?: number;
+  /** Límite de resultados por página */
   limit?: number;
 }
 
+/**
+ * Servicio para gestión de canciones.
+ * Soporta modo mock y backend real según configuración de entorno.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -43,27 +64,43 @@ export class SongService {
   private readonly favoritesUrl = `${environment.apis.contenidos}/favoritos`;
   private readonly purchasesUrl = `${environment.apis.contenidos}/compras`;
 
-  // Mock local
   private songs: Song[] = [...MOCK_SONGS];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private favoritosService: FavoritosService
+  ) {}
 
-  // ===============================================================
-  // PUBLIC API
-  // ===============================================================
-
+  /**
+   * Obtiene todas las canciones con filtros y paginación opcionales.
+   *
+   * @param params - Parámetros de filtrado, ordenamiento y paginación
+   * @returns Observable con respuesta paginada de canciones
+   */
   getAllSongs(params?: SongQueryParams): Observable<PaginatedSongsResponse> {
     return environment.useMock
       ? this.getAllSongsMock(params)
       : this.getAllSongsBackend(params);
   }
 
+  /**
+   * Obtiene una canción por su ID.
+   *
+   * @param id - ID de la canción
+   * @returns Observable con los datos de la canción
+   */
   getSongById(id: string): Observable<Song> {
     return environment.useMock
       ? this.getSongByIdMock(id)
       : this.http.get<any>(`${this.apiUrl}/${id}`).pipe(map(song => this.mapSongDto(song)));
   }
 
+  /**
+   * Obtiene todas las canciones de un álbum específico.
+   *
+   * @param albumId - ID del álbum
+   * @returns Observable con array de canciones del álbum
+   */
   getSongsByAlbum(albumId: string): Observable<Song[]> {
     if (environment.useMock) {
       const albumSongs = this.songs.filter(song =>
@@ -76,6 +113,12 @@ export class SongService {
     );
   }
 
+  /**
+   * Obtiene todas las canciones de un artista específico.
+   *
+   * @param artistId - ID del artista
+   * @returns Observable con array de canciones del artista
+   */
   getSongsByArtist(artistId: string): Observable<Song[]> {
     if (environment.useMock) {
       const artistSongs = this.songs.filter(song => song.artist.id === artistId);
@@ -86,6 +129,13 @@ export class SongService {
     );
   }
 
+  /**
+   * Busca canciones por término de búsqueda.
+   * Busca en título, género y nombre artístico.
+   *
+   * @param query - Término de búsqueda
+   * @returns Observable con array de canciones que coinciden
+   */
   searchSongs(query: string): Observable<Song[]> {
     if (environment.useMock) {
       const q = query.toLowerCase();
@@ -102,6 +152,13 @@ export class SongService {
     }).pipe(map(songs => songs.map(song => this.mapSongDto(song))));
   }
 
+  /**
+   * Registra una reproducción de una canción.
+   * Incrementa el contador de reproducciones.
+   *
+   * @param songId - ID de la canción reproducida
+   * @returns Observable con ID de la canción y total de reproducciones actualizado
+   */
   registerPlay(songId: string): Observable<{ id: string; totalPlays: number }> {
     if (environment.useMock) {
       const song = this.songs.find(s => s.id === songId);
@@ -123,6 +180,13 @@ export class SongService {
     );
   }
 
+  /**
+   * Alterna el estado de favorito de una canción.
+   * Agrega o elimina la canción de favoritos según su estado actual.
+   *
+   * @param songId - ID de la canción
+   * @returns Observable con la canción actualizada
+   */
   toggleFavorite(songId: string): Observable<Song> {
     if (environment.useMock) {
       const song = this.songs.find(s => s.id === songId);
@@ -133,22 +197,27 @@ export class SongService {
       return of(song).pipe(delay(this.MOCK_DELAY));
     }
 
-    return this.isSongFavorite(songId).pipe(
+    return this.favoritosService.esCancionFavorita(Number(songId)).pipe(
       switchMap((isFavorite) => {
         if (isFavorite) {
-          return this.http.delete<void>(`${this.favoritesUrl}/canciones/${songId}`).pipe(
+          return this.favoritosService.eliminarCancionDeFavoritos(Number(songId)).pipe(
             map(() => ({ id: songId, isFavorite: false } as Song))
           );
+        } else {
+          return this.favoritosService.agregarCancionAFavoritos(Number(songId)).pipe(
+            map(() => ({ id: this.toStringId(songId), isFavorite: true } as Song))
+          );
         }
-
-        const payload = { tipoContenido: 'CANCION', idCancion: Number(songId) };
-        return this.http.post<any>(this.favoritesUrl, payload).pipe(
-          map(() => ({ id: this.toStringId(songId), isFavorite: true } as Song))
-        );
       })
     );
   }
 
+  /**
+   * Registra la compra de una canción.
+   *
+   * @param songId - ID de la canción a comprar
+   * @returns Observable con la canción actualizada indicando que está comprada
+   */
   purchaseSong(songId: string): Observable<Song> {
     if (environment.useMock) {
       const song = this.songs.find(s => s.id === songId);
@@ -164,6 +233,11 @@ export class SongService {
     );
   }
 
+  /**
+   * Obtiene todas las canciones gratuitas (precio = 0).
+   *
+   * @returns Observable con array de canciones gratuitas
+   */
   getFreeSongs(): Observable<Song[]> {
     if (environment.useMock) {
       return of(this.songs.filter(song => song.price === 0)).pipe(delay(this.MOCK_DELAY));
@@ -173,12 +247,17 @@ export class SongService {
     );
   }
 
+  /**
+   * Obtiene todas las canciones marcadas como favoritas por el usuario actual.
+   *
+   * @returns Observable con array de canciones favoritas
+   */
   getFavoriteSongs(): Observable<Song[]> {
     if (environment.useMock) {
       return of(this.songs.filter(song => song.isFavorite)).pipe(delay(this.MOCK_DELAY));
     }
     return this.http.get<any>(this.favoritesUrl, {
-      params: new HttpParams().set('tipo', 'CANCION')
+      params: new HttpParams().set('tipo', 'CANCIÓN')
     }).pipe(
       map((response) => {
         const items = response?.favoritos ?? response?.content ?? response ?? [];
@@ -192,12 +271,17 @@ export class SongService {
     );
   }
 
+  /**
+   * Obtiene todas las canciones compradas por el usuario actual.
+   *
+   * @returns Observable con array de canciones compradas
+   */
   getPurchasedSongs(): Observable<Song[]> {
     if (environment.useMock) {
       return of(this.songs.filter(song => song.isPurchased)).pipe(delay(this.MOCK_DELAY));
     }
     return this.http.get<any>(this.purchasesUrl, {
-      params: new HttpParams().set('tipo', 'CANCION')
+      params: new HttpParams().set('tipo', 'CANCIÓN')
     }).pipe(
       map((response) => {
         const items = response?.content ?? response?.compras ?? response ?? [];
@@ -211,6 +295,12 @@ export class SongService {
     );
   }
 
+  /**
+   * Verifica si una canción está marcada como favorita.
+   *
+   * @param songId - ID de la canción
+   * @returns Observable con true si es favorita, false en caso contrario
+   */
   isSongFavorite(songId: string): Observable<boolean> {
     if (environment.useMock) {
       const song = this.songs.find(s => s.id === songId);
@@ -219,6 +309,12 @@ export class SongService {
     return this.http.get<boolean>(`${this.favoritesUrl}/canciones/${songId}/check`);
   }
 
+  /**
+   * Verifica si una canción ha sido comprada por el usuario.
+   *
+   * @param songId - ID de la canción
+   * @returns Observable con true si está comprada, false en caso contrario
+   */
   isSongPurchased(songId: string): Observable<boolean> {
     if (environment.useMock) {
       const song = this.songs.find(s => s.id === songId);
@@ -227,6 +323,12 @@ export class SongService {
     return this.http.get<boolean>(`${this.purchasesUrl}/canciones/${songId}/check`);
   }
 
+  /**
+   * Obtiene canciones filtradas por género.
+   *
+   * @param genre - Nombre del género
+   * @returns Observable con array de canciones del género especificado
+   */
   getSongsByGenre(genre: string): Observable<Song[]> {
     if (environment.useMock) {
       const g = genre.toLowerCase();
@@ -238,6 +340,12 @@ export class SongService {
     );
   }
 
+  /**
+   * Obtiene las canciones más reproducidas.
+   *
+   * @param limit - Número máximo de canciones a retornar (default: 10)
+   * @returns Observable con array de canciones ordenadas por reproducciones
+   */
   getMostPlayedSongs(limit: number = 10): Observable<Song[]> {
     if (environment.useMock) {
       const result = [...this.songs]
@@ -254,6 +362,12 @@ export class SongService {
     );
   }
 
+  /**
+   * Obtiene las canciones más recientes.
+   *
+   * @param limit - Número máximo de canciones a retornar (default: 10)
+   * @returns Observable con array de canciones ordenadas por fecha de lanzamiento
+   */
   getRecentSongs(limit: number = 10): Observable<Song[]> {
     if (environment.useMock) {
       const result = [...this.songs]
@@ -266,6 +380,12 @@ export class SongService {
     }).pipe(map(songs => songs.map(song => this.mapSongDto(song))));
   }
 
+  /**
+   * Obtiene las canciones mejor valoradas.
+   *
+   * @param limit - Número máximo de canciones a retornar (default: 10)
+   * @returns Observable con array de canciones ordenadas por calificación promedio
+   */
   getTopRatedSongs(limit: number = 10): Observable<Song[]> {
     if (environment.useMock) {
       const result = [...this.songs]
@@ -279,25 +399,21 @@ export class SongService {
     }).pipe(map(songs => songs.map(song => this.mapSongDto(song))));
   }
 
-  // ===============================================================
-  // MOCK MODE
-  // ===============================================================
-
+  /**
+   * Implementación mock de getAllSongs con filtrado y paginación local.
+   */
   private getAllSongsMock(params?: SongQueryParams): Observable<PaginatedSongsResponse> {
     let filtered = [...this.songs];
 
-    // Filtro artista
     if (params?.artistId) {
       filtered = filtered.filter(song => song.artist.id === params.artistId);
     }
 
-    // Filtro gAnero (string Anico)
     if (params?.genre) {
       const g = params.genre.toLowerCase();
       filtered = filtered.filter(song => song.genre.toLowerCase() === g);
     }
 
-    // BAsqueda
     if (params?.search) {
       const q = params.search.toLowerCase();
       filtered = filtered.filter(song =>
@@ -307,7 +423,6 @@ export class SongService {
       );
     }
 
-    // Precio
     if (params?.minPrice !== undefined) {
       filtered = filtered.filter(song => song.price >= params.minPrice!);
     }
@@ -315,10 +430,8 @@ export class SongService {
       filtered = filtered.filter(song => song.price <= params.maxPrice!);
     }
 
-    // Orden
     filtered = this.applySorting(filtered, params?.orderBy);
 
-    // PaginaciAn
     const page = params?.page || 1;
     const limit = params?.limit || 20;
     const start = (page - 1) * limit;
@@ -336,6 +449,9 @@ export class SongService {
     }).pipe(delay(this.MOCK_DELAY));
   }
 
+  /**
+   * Implementación mock de getSongById con búsqueda local.
+   */
   private getSongByIdMock(id: string): Observable<Song> {
     const song = this.songs.find(s => s.id === id);
     if (!song) {
@@ -344,6 +460,13 @@ export class SongService {
     return of(song).pipe(delay(this.MOCK_DELAY));
   }
 
+  /**
+   * Aplica ordenamiento a un array de canciones según el criterio especificado.
+   *
+   * @param songs - Array de canciones a ordenar
+   * @param orderBy - Criterio de ordenamiento
+   * @returns Array de canciones ordenado
+   */
   private applySorting(songs: Song[], orderBy?: string): Song[] {
     switch (orderBy) {
       case 'most_recent':
@@ -367,10 +490,9 @@ export class SongService {
     }
   }
 
-  // ===============================================================
-  // BACKEND MODE
-  // ===============================================================
-
+  /**
+   * Implementación backend de getAllSongs con construcción de HttpParams.
+   */
   private getAllSongsBackend(params?: SongQueryParams): Observable<PaginatedSongsResponse> {
     let httpParams = new HttpParams();
 
@@ -381,12 +503,25 @@ export class SongService {
     if (params?.orderBy) httpParams = httpParams.set('orderBy', params.orderBy);
     if (params?.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
     if (params?.limit !== undefined) httpParams = httpParams.set('limit', params.limit.toString());
+    if (params?.minPrice !== undefined) {
+      httpParams = httpParams.set('minPrice', params.minPrice.toString());
+    }
+    if (params?.maxPrice !== undefined) {
+      httpParams = httpParams.set('maxPrice', params.maxPrice.toString());
+    }
 
     return this.http.get<any>(`${this.apiUrl}`, { params: httpParams }).pipe(
       map(res => this.normalizeBackendResponse(res))
     );
   }
 
+  /**
+   * Normaliza la respuesta del backend a formato estándar PaginatedSongsResponse.
+   * Maneja múltiples variaciones de nombres de campos del backend.
+   *
+   * @param response - Respuesta raw del backend
+   * @returns Respuesta normalizada
+   */
   private normalizeBackendResponse(response: any): PaginatedSongsResponse {
     const rawContent = response?.canciones || response?.songs || response?.content || response?.items || [];
     const content = Array.isArray(rawContent) ? rawContent.map(song => this.mapSongDto(song)) : [];
@@ -407,6 +542,13 @@ export class SongService {
     };
   }
 
+  /**
+   * Mapea un DTO de canción del backend al modelo Song del frontend.
+   * Maneja múltiples variaciones de nombres de campos para compatibilidad.
+   *
+   * @param dto - Objeto DTO del backend
+   * @returns Objeto Song normalizado
+   */
   private mapSongDto(dto: any): Song {
     if (!dto) {
       return {
@@ -465,6 +607,12 @@ export class SongService {
     };
   }
 
+  /**
+   * Mapea un array de álbumes del DTO a objetos SongAlbumSummary.
+   *
+   * @param albums - Array de álbumes desde el backend
+   * @returns Array de SongAlbumSummary normalizado
+   */
   private mapAlbumsFromSong(albums: any[]): SongAlbumSummary[] {
     if (!Array.isArray(albums)) return [];
     return albums.map((album: any) => ({
@@ -475,6 +623,15 @@ export class SongService {
     }));
   }
 
+  /**
+   * Mapea datos de artista del backend al modelo SongArtist.
+   * Utiliza valores de fallback si el objeto artista no está completo.
+   *
+   * @param artistLike - Objeto artista desde el backend
+   * @param fallbackId - ID alternativo si no está presente en artistLike
+   * @param fallbackName - Nombre alternativo si no está presente en artistLike
+   * @returns Objeto SongArtist normalizado
+   */
   private mapArtist(artistLike: any, fallbackId?: any, fallbackName?: any): SongArtist {
     const artist: any = artistLike || {};
     const userIdValue = artist.userId ?? artist.idUsuario ?? artist.usuarioId ?? artist?.usuario?.id ?? null;
@@ -491,6 +648,13 @@ export class SongService {
     };
   }
 
+  /**
+   * Convierte un valor a string de forma segura.
+   * Retorna string vacío si el valor es null o undefined.
+   *
+   * @param value - Valor a convertir
+   * @returns Representación en string del valor
+   */
   private toStringId(value: any): string {
     if (value === undefined || value === null) {
       return '';

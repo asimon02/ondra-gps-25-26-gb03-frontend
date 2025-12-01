@@ -1,14 +1,12 @@
-<!-- src/app/features/user-profile/components/favorites-preview/favorites-preview.component.html -->
-
 <div *ngIf="!isLoading" class="h-full flex flex-col">
   <app-content-carousel
     [items]="favoritos"
     [icon]="'favorite'"
     [title]="isOwnProfile ? 'Mis Favoritos' : 'Contenido favorito'"
     [showAddButton]="false"
+    [showPlayButton]="false"
     [emptyMessage]="isOwnProfile ? 'Aún no tienes canciones o álbumes favoritos' : 'Este usuario no tiene contenido favorito público'"
-    (itemClick)="onItemClick($event)"
-    (playClick)="onPlayClick($event)">
+    (itemClick)="onItemClick($event)">
   </app-content-carousel>
 </div>
 

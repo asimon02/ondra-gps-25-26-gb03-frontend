@@ -3,15 +3,13 @@ import { Router, CanActivateFn } from '@angular/router';
 import { AuthStateService } from '../../core/services/auth-state.service';
 
 /**
- * Guard que verifica si el usuario ha completado el onboarding inicial.
+ * Guard que verifica si el usuario ha completado el proceso de onboarding inicial.
  *
- * Si el usuario no ha completado el onboarding (onboardingCompletado = false),
- * lo redirige a /preferencias/configurar.
+ * Si el usuario autenticado no ha completado el onboarding (onboardingCompletado = false),
+ * lo redirige a la ruta de configuración de preferencias.
  *
- * Úsalo en rutas principales como:
- * - / (home)
- * - /dashboard-artista
- * - Cualquier ruta que requiera que el usuario haya pasado por el wizard
+ * Este guard debe aplicarse en rutas principales que requieran que el usuario
+ * haya completado el wizard de configuración inicial.
  *
  * @example
  * ```typescript
@@ -28,20 +26,14 @@ export const onboardingGuard: CanActivateFn = (route, state) => {
 
   const usuario = authState.currentUser();
 
-  // Si no hay usuario autenticado, permitir acceso
-  // (authGuard ya se encargará de redirigir al login)
   if (!usuario) {
     return true;
   }
 
-  // Si el usuario no ha completado el onboarding, redirigir
   if (!usuario.onboardingCompletado) {
-    console.log('⚠️ Onboarding no completado, redirigiendo a configurar preferencias');
     router.navigate(['/preferencias/configurar']);
     return false;
   }
 
-  // Usuario ha completado onboarding, permitir acceso
-  console.log('✅ Onboarding completado, permitiendo acceso');
   return true;
 };

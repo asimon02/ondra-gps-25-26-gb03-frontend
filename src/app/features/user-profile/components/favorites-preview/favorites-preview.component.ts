@@ -1,15 +1,62 @@
-// src/app/features/user-profile/components/favorites-preview/favorites-preview.component.ts
-
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ContentCarouselComponent, CarouselItem } from '../content-carousel/content-carousel.component';
 import { environment } from '../../../../../enviroments/enviroment';
-import { MusicPlayerService } from '../../../../core/services/music-player.service';
-import { AlbumService as CoreAlbumService } from '../../../../core/services/album.service';
-import { SongService as CoreSongService } from '../../../../core/services/song.service';
-import { AuthStateService } from '../../../../core/services/auth-state.service';
+import { FavoritosService } from '../../../../core/services/favoritos.service';
+
+interface CancionDTO {
+  idCancion: number;
+  tituloCancion: string;
+  idArtista: number;
+  genero: string;
+  precioCancion: number;
+  duracionSegundos: number;
+  urlPortada: string;
+  urlAudio: string;
+  reproducciones: number;
+  valoracionMedia: number | null;
+  totalComentarios: number;
+  fechaPublicacion: string;
+  descripcion: string;
+}
+
+interface AlbumDTO {
+  idAlbum: number;
+  tituloAlbum: string;
+  idArtista: number;
+  genero: string;
+  precioAlbum: number;
+  urlPortada: string;
+  valoracionMedia: number | null;
+  totalComentarios: number;
+  totalCanciones: number;
+  duracionTotalSegundos: number;
+  totalPlayCount: number;
+  fechaPublicacion: string;
+  descripcion: string;
+}
+
+interface FavoritoDTO {
+  idFavorito: number;
+  idUsuario: number;
+  tipoContenido: 'CANCIÓN' | 'ÁLBUM';
+  cancion?: CancionDTO;
+  album?: AlbumDTO;
+  fechaAgregado: string;
+  nombreArtista: string;
+  slugArtista?: string;
+}
+
+interface FavoritosPaginadosDTO {
+  favoritos: FavoritoDTO[];
+  paginaActual: number;
+  totalPaginas: number;
+  totalElementos: number;
+  elementosPorPagina: number;
+}
 
 @Component({
   selector: 'app-favorites-preview',
@@ -18,121 +65,142 @@ import { AuthStateService } from '../../../../core/services/auth-state.service';
   templateUrl: './favorites-preview.component.html',
   styleUrls: ['./favorites-preview.component.scss']
 })
-export class FavoritesPreviewComponent implements OnInit {
+export class FavoritesPreviewComponent implements OnInit, OnDestroy {
+  /**
+   * ID del usuario del cual se cargarán los favoritos.
+   */
   @Input() userId!: number;
-  @Input() isOwnProfile: boolean = false; // ✅ NUEVO
 
+  /**
+   * Indica si el perfil mostrado pertenece al usuario autenticado.
+   */
+  @Input() isOwnProfile: boolean = false;
+
+  /**
+   * Lista de favoritos en formato de ítems para el carrusel.
+   */
   favoritos: CarouselItem[] = [];
+
+  /**
+   * Indica si los datos están siendo cargados.
+   */
   isLoading = true;
+
+  /**
+   * Suscripción a eventos de cambios en los favoritos.
+   */
+  private favoritosSubscription?: Subscription;
 
   constructor(
     private http: HttpClient,
     private router: Router,
-    private playerService: MusicPlayerService,
-    private coreAlbumService: CoreAlbumService,
-    private coreSongService: CoreSongService,
-    private authState: AuthStateService
+    private favoritosService: FavoritosService
   ) {}
 
+  /**
+   * Carga inicial de favoritos y suscripción a cambios en el servicio.
+   */
   ngOnInit(): void {
     this.cargarFavoritos();
+    this.suscribirseACambiosDeFavoritos();
   }
 
-  cargarFavoritos(): void {
-    this.isLoading = true;
-
-    setTimeout(() => {
-      this.favoritos = [
-        {
-          id: 1,
-          nombre: 'One More Time',
-          artista: 'Daft Punk',
-          tipo: 'canción',
-          imagen: 'https://i.scdn.co/image/ab67616d0000b27338e5c88261ac859cee792916'
-        },
-        {
-          id: 2,
-          nombre: 'Around the World',
-          artista: 'Daft Punk',
-          tipo: 'canción',
-          imagen: 'https://i.scdn.co/image/ab67616d0000b27338e5c88261ac859cee792916'
-        },
-        {
-          id: 3,
-          nombre: 'Random Access Memories',
-          artista: 'Daft Punk',
-          tipo: 'álbum',
-          imagen: 'https://i.scdn.co/image/ab67616d0000b27338e5c88261ac859cee792916'
-        },
-        {
-          id: 4,
-          nombre: 'Get Lucky',
-          artista: 'Daft Punk',
-          tipo: 'canción',
-          imagen: 'https://i.scdn.co/image/ab67616d0000b27338e5c88261ac859cee792916'
-        },
-        {
-          id: 5,
-          nombre: 'Instant Crush',
-          artista: 'Daft Punk',
-          tipo: 'canción',
-          imagen: 'https://i.scdn.co/image/ab67616d0000b27338e5c88261ac859cee792916'
-        }
-      ];
-      this.isLoading = false;
-    }, 500);
-  }
-
-  onItemClick(item: CarouselItem): void {
-    console.log('Favorito clickeado:', item);
-    if (item.tipo === 'álbum') {
-      this.router.navigate([`/album/${item.id}`]);
-    } else {
-      this.router.navigate([`/song/${item.id}`]);
+  /**
+   * Elimina la suscripción al destruir el componente.
+   */
+  ngOnDestroy(): void {
+    if (this.favoritosSubscription) {
+      this.favoritosSubscription.unsubscribe();
     }
   }
 
-  onPlayClick(item: CarouselItem): void {
-    console.log('Reproducir favorito:', item);
+  /**
+   * Se suscribe a los eventos emitidos cuando ocurre un cambio en los favoritos,
+   * recargando la lista automáticamente.
+   */
+  private suscribirseACambiosDeFavoritos(): void {
+    this.favoritosSubscription = this.favoritosService.onFavoritoChanged.subscribe({
+      next: () => {
+        this.cargarFavoritos();
+      },
+      error: (err) => console.error('Error en suscripción a favoritos:', err)
+    });
+  }
 
+  /**
+   * Llama al backend para obtener todos los favoritos del usuario.
+   */
+  cargarFavoritos(): void {
+    this.isLoading = true;
+
+    const params = new HttpParams()
+      .set('idUsuario', this.userId.toString())
+      .set('page', '1')
+      .set('limit', '9999');
+
+    const url = `${environment.apis.contenidos}/favoritos`;
+
+    this.http.get<FavoritosPaginadosDTO>(url, { params }).subscribe({
+      next: (response) => {
+        this.favoritos = this.mapearFavoritosACarouselItems(response.favoritos);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.favoritos = [];
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Convierte los objetos FavoritoDTO en elementos del carrusel.
+   *
+   * @param favoritos Lista de favoritos del backend.
+   */
+  private mapearFavoritosACarouselItems(favoritos: FavoritoDTO[]): CarouselItem[] {
+    return favoritos.map(fav => {
+      const artista = fav.nombreArtista || 'Artista desconocido';
+
+      if (fav.tipoContenido === 'CANCIÓN' && fav.cancion) {
+        return {
+          id: fav.cancion.idCancion,
+          nombre: fav.cancion.tituloCancion,
+          artista,
+          tipo: 'canción',
+          imagen: fav.cancion.urlPortada || 'assets/default-song.png'
+        };
+      }
+
+      if (fav.tipoContenido === 'ÁLBUM' && fav.album) {
+        return {
+          id: fav.album.idAlbum,
+          nombre: fav.album.tituloAlbum,
+          artista,
+          tipo: 'álbum',
+          imagen: fav.album.urlPortada || 'assets/default-album.png'
+        };
+      }
+
+      return {
+        id: fav.idFavorito,
+        nombre: 'Desconocido',
+        artista,
+        tipo: fav.tipoContenido === 'ÁLBUM' ? 'álbum' : 'canción',
+        imagen: 'assets/default-content.png'
+      };
+    });
+  }
+
+  /**
+   * Navega al detalle del contenido cuando el usuario hace clic en un ítem del carrusel.
+   *
+   * @param item Elemento seleccionado.
+   */
+  onItemClick(item: CarouselItem): void {
     if (item.tipo === 'álbum') {
-      // Cargar álbum y reproducir primera canción
-      this.coreAlbumService.getAlbumById(item.id.toString()).subscribe({
-        next: (album) => {
-          if (album.trackList && album.trackList.length > 0) {
-            this.playerService.setPlaylist(album.trackList);
-            this.playerService.playSong(album.trackList[0], true);
-            if (this.authState.isAuthenticated()) {
-              this.coreSongService.registerPlay(album.trackList[0].id).subscribe({
-                error: (err) => console.error('Error registering play:', err)
-              });
-            }
-          } else {
-            alert('Este álbum no tiene canciones disponibles');
-          }
-        },
-        error: (err) => {
-          console.error('Error loading album:', err);
-          alert('Error al cargar el álbum');
-        }
-      });
+      this.router.navigate([`/album/${item.id}`]);
     } else {
-      // Cargar y reproducir canción
-      this.coreSongService.getSongById(item.id.toString()).subscribe({
-        next: (song) => {
-          this.playerService.setPlaylist([song]);
-          this.playerService.playSong(song, true);
-          if (this.authState.isAuthenticated()) {
-            this.coreSongService.registerPlay(song.id).subscribe({
-              error: (err) => console.error('Error registering play:', err)
-            });
-          }
-        },
-        error: (err) => {
-          console.error('Error loading song:', err);
-          alert('Error al cargar la canción');
-        }
-      });
+      this.router.navigate([`/cancion/${item.id}`]);
     }
   }
 }

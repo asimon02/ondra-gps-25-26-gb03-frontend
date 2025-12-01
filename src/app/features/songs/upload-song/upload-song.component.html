@@ -1,18 +1,9 @@
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-blue-50 py-8 px-4 sm:px-6 lg:px-8">
   <div class="max-w-5xl mx-auto">
 
     <!-- Header -->
     <div class="mb-8">
-      <button
-        (click)="goBack()"
-        class="group flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-200 mb-6">
-        <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 group-hover:border-primary flex items-center justify-center transition-all duration-200">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-          </svg>
-        </div>
-        <span class="font-medium">Volver</span>
-      </button>
+      <app-back-button class="mb-6"></app-back-button>
 
       <div class="flex items-start justify-between flex-wrap gap-4">
         <div class="flex items-center gap-3">
@@ -330,13 +321,11 @@
 
             <!-- Botones -->
             <div class="flex gap-3 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                (click)="goBack()"
-                [disabled]="isSubmitting()"
-                class="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold disabled:opacity-50 shadow-sm">
-                Cancelar
-              </button>
+              <app-back-button
+                label="Cancelar"
+                class="flex-1"
+                [block]="true"
+              ></app-back-button>
 
               <button
                 type="submit"

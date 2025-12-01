@@ -1,5 +1,5 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlbumService } from '../services/album.service';
@@ -8,11 +8,21 @@ import { FileUploadService } from '../../shared/services/file-upload.service';
 import { GenreService, GeneroDTO } from '../../shared/services/genre.service';
 import { CancionDTO } from '../../songs/models/song.model';
 import { AuthStateService } from '../../../core/services/auth-state.service';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
+/**
+ * Componente para la creación de álbumes musicales.
+ *
+ * Permite a los artistas:
+ * - Crear un nuevo álbum con información básica
+ * - Subir portada del álbum
+ * - Seleccionar canciones existentes para incluir en el álbum
+ * - Gestionar el proceso en pasos progresivos
+ */
 @Component({
   selector: 'app-upload-album',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent],
   templateUrl: './upload-album.component.html',
   styleUrls: ['./upload-album.component.scss']
 })
@@ -23,12 +33,11 @@ export class UploadAlbumComponent implements OnInit {
   private fileUploadService = inject(FileUploadService);
   private genreService = inject(GenreService);
   private authService = inject(AuthStateService);
-  private location = inject(Location);
 
   public router = inject(Router);
 
   albumForm!: FormGroup;
-  generos = signal<GeneroDTO[]>([]);  // ✅ Cambiado de GeneroOption[] a GeneroDTO[]
+  generos = signal<GeneroDTO[]>([]);
   misCanciones = signal<CancionDTO[]>([]);
   cancionesSeleccionadas = signal<CancionDTO[]>([]);
 
@@ -51,21 +60,26 @@ export class UploadAlbumComponent implements OnInit {
     this.initializeForm();
   }
 
-  // ==================== CARGA INICIAL ====================
-
+  /**
+   * Carga la lista de géneros musicales disponibles.
+   */
   private cargarGeneros(): void {
-    this.genreService.obtenerTodosLosGeneros().subscribe({  // ✅ Usar método directo
+    this.genreService.obtenerTodosLosGeneros().subscribe({
       next: (generos) => this.generos.set(generos),
       error: (err) => console.error('Error al cargar géneros:', err)
     });
   }
 
+  /**
+   * Carga las canciones del artista actual que no están asignadas a ningún álbum.
+   * Solo muestra canciones disponibles para ser agregadas al nuevo álbum.
+   */
   private cargarMisCanciones(): void {
     this.loadingCanciones.set(true);
 
     const userInfo = this.authService.getUserInfo();
     if (!userInfo) {
-      console.error('❌ No hay usuario autenticado');
+      console.error('No hay usuario autenticado');
       this.errorMessage.set('No hay usuario autenticado. Por favor, inicia sesión.');
       this.loadingCanciones.set(false);
       return;
@@ -74,29 +88,19 @@ export class UploadAlbumComponent implements OnInit {
     const idArtista = userInfo.idArtista;
 
     if (!idArtista) {
-      console.log(idArtista);
-      console.warn('⚠️ El usuario no es artista o no tiene idArtista');
       this.misCanciones.set([]);
       this.loadingCanciones.set(false);
       return;
     }
 
-    console.log(`🔍 Cargando canciones del artista ID: ${idArtista}`);
-
     this.songService.obtenerCancionesPorArtista(idArtista).subscribe({
       next: (canciones) => {
-        console.log('✅ Canciones recibidas del backend:', canciones);
-
         const cancionesSinAlbum = canciones.filter(c => !c.album);
-
         this.misCanciones.set(cancionesSinAlbum);
-
-        console.log(`📦 Canciones disponibles: ${cancionesSinAlbum.length}`);
-
         this.loadingCanciones.set(false);
       },
       error: (err) => {
-        console.error('❌ Error al cargar canciones:', err);
+        console.error('Error al cargar canciones:', err);
         this.errorMessage.set(
           err.error?.message ||
           'Error al cargar tus canciones. Por favor, intenta de nuevo.'
@@ -107,8 +111,10 @@ export class UploadAlbumComponent implements OnInit {
     });
   }
 
-  // ==================== FORMULARIO ====================
-
+  /**
+   * Inicializa el formulario reactivo con validaciones.
+   * Establece valores por defecto como la fecha actual y precio sugerido.
+   */
   private initializeForm(): void {
     const today = new Date().toISOString().split('T')[0];
 
@@ -121,8 +127,12 @@ export class UploadAlbumComponent implements OnInit {
     });
   }
 
-  // ==================== GESTIÓN DE PORTADA ====================
-
+  /**
+   * Maneja la selección de archivo de portada.
+   * Valida el archivo, genera preview y sube la imagen al servidor.
+   *
+   * @param event - Evento del input file
+   */
   onCoverSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -148,14 +158,9 @@ export class UploadAlbumComponent implements OnInit {
       next: (response) => {
         this.coverUrl.set(response.url);
         this.uploadingCover.set(false);
-        console.log('✅ Portada de álbum subida:', {
-          url: response.url,
-          dimensiones: response.dimensiones,
-          mensaje: response.mensaje
-        });
       },
       error: (error) => {
-        console.error('❌ Error al subir portada:', error);
+        console.error('Error al subir portada:', error);
         this.errorMessage.set(
           error.error?.mensaje ||
           error.error?.message ||
@@ -167,13 +172,19 @@ export class UploadAlbumComponent implements OnInit {
     });
   }
 
+  /**
+   * Elimina la portada seleccionada.
+   */
   removeCover(): void {
     this.coverUrl.set(null);
     this.coverPreview.set(null);
   }
 
-  // ==================== SELECCIÓN DE CANCIONES ====================
-
+  /**
+   * Alterna la selección de una canción para incluirla en el álbum.
+   *
+   * @param cancion - Canción a seleccionar/deseleccionar
+   */
   toggleCancion(cancion: CancionDTO): void {
     const canciones = this.cancionesSeleccionadas();
     const index = canciones.findIndex(c => c.idCancion === cancion.idCancion);
@@ -185,12 +196,20 @@ export class UploadAlbumComponent implements OnInit {
     }
   }
 
+  /**
+   * Verifica si una canción está seleccionada.
+   *
+   * @param cancion - Canción a verificar
+   * @returns true si la canción está seleccionada
+   */
   isCancionSeleccionada(cancion: CancionDTO): boolean {
     return this.cancionesSeleccionadas().some(c => c.idCancion === cancion.idCancion);
   }
 
-  // ==================== NAVEGACIÓN ENTRE PASOS ====================
-
+  /**
+   * Avanza al siguiente paso del formulario.
+   * Valida los datos del paso actual antes de continuar.
+   */
   nextStep(): void {
     if (this.currentStep() === 1 && this.albumForm.invalid) {
       this.albumForm.markAllAsTouched();
@@ -212,18 +231,28 @@ export class UploadAlbumComponent implements OnInit {
     this.scrollToTop();
   }
 
+  /**
+   * Retrocede al paso anterior del formulario.
+   */
   prevStep(): void {
     this.currentStep.update(s => s - 1);
     this.errorMessage.set(null);
     this.scrollToTop();
   }
 
+  /**
+   * Desplaza la ventana al inicio de la página con animación suave.
+   */
   private scrollToTop(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ==================== CREACIÓN DEL ÁLBUM ====================
-
+  /**
+   * Maneja el envío del formulario y creación del álbum.
+   * Valida los datos y ejecuta el proceso de creación en dos fases:
+   * 1. Crea el álbum
+   * 2. Agrega las canciones seleccionadas
+   */
   onSubmit(): void {
     if (this.albumForm.invalid) {
       this.albumForm.markAllAsTouched();
@@ -251,15 +280,12 @@ export class UploadAlbumComponent implements OnInit {
       descripcion: formValue.descripcionAlbum || undefined
     };
 
-    console.log('📀 Creando álbum:', albumDTO);
-
     this.albumService.crearAlbum(albumDTO).subscribe({
       next: (album) => {
-        console.log('✅ Álbum creado:', album);
         this.agregarCancionesAlAlbum(album.idAlbum);
       },
       error: (error) => {
-        console.error('❌ Error al crear álbum:', error);
+        console.error('Error al crear álbum:', error);
         this.errorMessage.set(
           error.error?.message ||
           error.error?.mensaje ||
@@ -271,12 +297,16 @@ export class UploadAlbumComponent implements OnInit {
     });
   }
 
+  /**
+   * Agrega las canciones seleccionadas al álbum recién creado.
+   * Asigna número de pista a cada canción según el orden de selección.
+   *
+   * @param idAlbum - ID del álbum al que se agregarán las canciones
+   */
   private agregarCancionesAlAlbum(idAlbum: number): void {
     const canciones = this.cancionesSeleccionadas();
     let completadas = 0;
     let errores = 0;
-
-    console.log(`🎵 Agregando ${canciones.length} canciones al álbum ${idAlbum}`);
 
     canciones.forEach((cancion, index) => {
       const dto = {
@@ -284,12 +314,9 @@ export class UploadAlbumComponent implements OnInit {
         numeroPista: index + 1
       };
 
-      console.log(`📝 Agregando canción ${index + 1}/${canciones.length}:`, dto);
-
       this.albumService.agregarCancionAlAlbum(idAlbum, dto).subscribe({
         next: () => {
           completadas++;
-          console.log(`✅ Canción ${completadas}/${canciones.length} agregada: ${cancion.tituloCancion}`);
 
           if (completadas + errores === canciones.length) {
             this.finalizarCreacion(completadas, errores);
@@ -297,12 +324,7 @@ export class UploadAlbumComponent implements OnInit {
         },
         error: (error) => {
           errores++;
-          console.error(`❌ Error al agregar canción ${cancion.tituloCancion}:`, error);
-          console.error('   Detalles:', {
-            idCancion: cancion.idCancion,
-            idArtista: cancion.idArtista,
-            error: error.error
-          });
+          console.error('Error al agregar canción:', error);
 
           if (completadas + errores === canciones.length) {
             this.finalizarCreacion(completadas, errores);
@@ -312,6 +334,13 @@ export class UploadAlbumComponent implements OnInit {
     });
   }
 
+  /**
+   * Finaliza el proceso de creación del álbum.
+   * Muestra mensaje de éxito o advertencia y redirige al perfil.
+   *
+   * @param completadas - Número de canciones agregadas exitosamente
+   * @param errores - Número de canciones que fallaron al agregarse
+   */
   private finalizarCreacion(completadas: number, errores: number): void {
     this.isSubmitting.set(false);
 
@@ -330,13 +359,21 @@ export class UploadAlbumComponent implements OnInit {
     }, 3000);
   }
 
-  // ==================== MÉTODOS AUXILIARES ====================
-
+  /**
+   * Obtiene el nombre del género seleccionado en el formulario.
+   *
+   * @returns Nombre del género o cadena vacía si no hay selección
+   */
   getNombreGenero(): string {
     const idGenero = parseInt(this.albumForm.value.idGenero);
-    return this.generos().find(g => g.idGenero === idGenero)?.nombreGenero || '';  // ✅ Usar idGenero y nombreGenero
+    return this.generos().find(g => g.idGenero === idGenero)?.nombreGenero || '';
   }
 
+  /**
+   * Calcula la duración total del álbum basada en las canciones seleccionadas.
+   *
+   * @returns Duración formateada como "Xh Ym Zs" o "Ym Zs"
+   */
   getDuracionTotal(): string {
     const totalSegundos = this.cancionesSeleccionadas()
       .reduce((sum, c) => sum + c.duracionSegundos, 0);
@@ -351,12 +388,24 @@ export class UploadAlbumComponent implements OnInit {
     return `${minutos}m ${segundos}s`;
   }
 
+  /**
+   * Formatea una duración en segundos a formato MM:SS.
+   *
+   * @param seconds - Duración en segundos
+   * @returns Duración formateada
+   */
   formatDuration(seconds: number): string {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
+  /**
+   * Formatea una fecha ISO a formato legible en español.
+   *
+   * @param dateString - Fecha en formato ISO
+   * @returns Fecha formateada en español o cadena vacía
+   */
   formatDate(dateString: string): string {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -367,18 +416,18 @@ export class UploadAlbumComponent implements OnInit {
     });
   }
 
-  goBack(): void {
-    this.location.back();
-  }
-
-  // ==================== GETTERS PARA VALIDACIÓN ====================
-
   get tituloAlbum() { return this.albumForm.get('tituloAlbum'); }
   get descripcionAlbum() { return this.albumForm.get('descripcionAlbum'); }
   get idGenero() { return this.albumForm.get('idGenero'); }
   get fechaLanzamiento() { return this.albumForm.get('fechaLanzamiento'); }
   get precioAlbum() { return this.albumForm.get('precioAlbum'); }
 
+  /**
+   * Verifica si un campo del formulario es inválido y ha sido tocado.
+   *
+   * @param field - FormControl a verificar
+   * @returns true si el campo es inválido y ha sido tocado
+   */
   isFieldInvalid(field: any): boolean {
     return !!(field && field.invalid && field.touched);
   }

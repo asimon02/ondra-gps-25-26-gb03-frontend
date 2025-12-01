@@ -2,22 +2,44 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Song } from '../models/song.model';
 
+/**
+ * Servicio para controlar la reproducción de música.
+ *
+ * Maneja:
+ * - Canción actual
+ * - Playlist
+ * - Reproducción, pausa, siguiente/anterior
+ * - Volumen, mute y seek
+ * - Observables reactivos para UI
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class MusicPlayerService {
   private audioElement: HTMLAudioElement;
 
-  // Estado observable
+  /** Estado observable de la canción actual */
   private currentSongSubject = new BehaviorSubject<Song | null>(null);
+
+  /** Estado observable de si está reproduciendo */
   private isPlayingSubject = new BehaviorSubject<boolean>(false);
+
+  /** Tiempo actual en segundos */
   private currentTimeSubject = new BehaviorSubject<number>(0);
+
+  /** Duración total en segundos */
   private durationSubject = new BehaviorSubject<number>(0);
+
+  /** Progreso de reproducción en porcentaje */
   private progressSubject = new BehaviorSubject<number>(0);
+
+  /** Volumen actual (0-100) */
   private volumeSubject = new BehaviorSubject<number>(50);
+
+  /** Playlist actual */
   private playlistSubject = new BehaviorSubject<Song[]>([]);
 
-  // Observables públicos
+  /** Observables públicos para componentes */
   currentSong$ = this.currentSongSubject.asObservable();
   isPlaying$ = this.isPlayingSubject.asObservable();
   currentTime$ = this.currentTimeSubject.asObservable();
@@ -26,6 +48,7 @@ export class MusicPlayerService {
   volume$ = this.volumeSubject.asObservable();
   playlist$ = this.playlistSubject.asObservable();
 
+  /** Volumen previo usado para toggleMute */
   private previousVolume = 50;
 
   constructor() {
@@ -35,6 +58,7 @@ export class MusicPlayerService {
     this.audioElement.volume = 0.5;
   }
 
+  /** Configura listeners del elemento de audio */
   private setupAudioListeners(): void {
     this.audioElement.addEventListener('loadedmetadata', () => {
       this.durationSubject.next(this.audioElement.duration || 0);
@@ -61,6 +85,13 @@ export class MusicPlayerService {
     });
   }
 
+  /**
+   * Reproduce una canción específica.
+   * Si la canción ya está cargada, solo la reproduce si `autoPlay` es true.
+   *
+   * @param song Canción a reproducir
+   * @param autoPlay Si debe iniciar reproducción automáticamente
+   */
   playSong(song: Song, autoPlay = true): void {
     const currentSong = this.currentSongSubject.value;
 
@@ -75,10 +106,15 @@ export class MusicPlayerService {
     this.loadSong(song, autoPlay);
   }
 
+  /**
+   * Establece la playlist completa
+   * @param songs Array de canciones
+   */
   setPlaylist(songs: Song[]): void {
     this.playlistSubject.next(songs);
   }
 
+  /** Carga internamente la canción en el elemento de audio */
   private loadSong(song: Song, autoPlay: boolean): void {
     this.audioElement.pause();
     this.audioElement.currentTime = 0;
@@ -100,19 +136,16 @@ export class MusicPlayerService {
   }
 
   /**
-   * Actualiza los datos de la canci��n actual sin reiniciar el audio.
-   * Útil para reflejar cambios como favoritos o compras hechos desde otros componentes.
+   * Actualiza los datos de la canción actual sin reiniciar el audio.
+   * Útil para cambios de favoritos o compras desde otros componentes.
    */
   updateCurrentSong(update: Partial<Song> & { id: string }): void {
     const current = this.currentSongSubject.value;
-    if (!current || current.id !== update.id) {
-      return;
-    }
+    if (!current || current.id !== update.id) return;
 
     const mergedSong = { ...current, ...update };
     this.currentSongSubject.next(mergedSong);
 
-    // Mantener la playlist en sync para reflejar el cambio en el resto de la UI
     const playlist = this.playlistSubject.value;
     if (playlist.length > 0) {
       const updatedPlaylist = playlist.map(song =>
@@ -122,6 +155,7 @@ export class MusicPlayerService {
     }
   }
 
+  /** Reproduce la canción actual */
   play(): void {
     this.audioElement.play()
       .then(() => this.isPlayingSubject.next(true))
@@ -131,11 +165,13 @@ export class MusicPlayerService {
       });
   }
 
+  /** Pausa la canción actual */
   pause(): void {
     this.audioElement.pause();
     this.isPlayingSubject.next(false);
   }
 
+  /** Alterna entre reproducción y pausa */
   togglePlay(): void {
     if (this.isPlayingSubject.value) {
       this.pause();
@@ -144,6 +180,7 @@ export class MusicPlayerService {
     }
   }
 
+  /** Reproduce la siguiente canción de la playlist */
   playNext(): void {
     const currentSong = this.currentSongSubject.value;
     const playlist = this.playlistSubject.value;
@@ -155,12 +192,10 @@ export class MusicPlayerService {
 
     const nextIndex = (currentIndex + 1) % playlist.length;
     const nextSong = playlist[nextIndex];
-
-    if (nextSong) {
-      this.playSong(nextSong, true);
-    }
+    if (nextSong) this.playSong(nextSong, true);
   }
 
+  /** Reproduce la canción anterior de la playlist */
   playPrevious(): void {
     const currentSong = this.currentSongSubject.value;
     const playlist = this.playlistSubject.value;
@@ -172,17 +207,19 @@ export class MusicPlayerService {
 
     const prevIndex = currentIndex === 0 ? playlist.length - 1 : currentIndex - 1;
     const prevSong = playlist[prevIndex];
-
-    if (prevSong) {
-      this.playSong(prevSong, true);
-    }
+    if (prevSong) this.playSong(prevSong, true);
   }
 
+  /**
+   * Establece el volumen de reproducción
+   * @param volume Valor entre 0 y 100
+   */
   setVolume(volume: number): void {
     this.volumeSubject.next(volume);
     this.audioElement.volume = volume / 100;
   }
 
+  /** Alterna el estado de mute */
   toggleMute(): void {
     const currentVolume = this.volumeSubject.value;
 
@@ -194,6 +231,10 @@ export class MusicPlayerService {
     }
   }
 
+  /**
+   * Mueve la reproducción a un porcentaje de la duración
+   * @param percentage Porcentaje (0-100)
+   */
   seek(percentage: number): void {
     const duration = this.durationSubject.value;
     if (duration === 0) return;
@@ -203,6 +244,7 @@ export class MusicPlayerService {
     this.currentTimeSubject.next(newTime);
   }
 
+  /** Detiene la reproducción y resetea el estado */
   stop(): void {
     this.audioElement.pause();
     this.audioElement.currentTime = 0;
@@ -212,21 +254,45 @@ export class MusicPlayerService {
     this.currentSongSubject.next(null);
   }
 
+  /** Retorna true si hay canciones anteriores disponibles */
   get hasPrevious(): boolean {
     return this.playlistSubject.value.length > 1;
   }
 
+  /** Retorna true si hay canciones siguientes disponibles */
   get hasNext(): boolean {
     return this.playlistSubject.value.length > 1;
   }
 
-  // Getter para acceder al valor actual de la canción
+  /** Devuelve la canción actual */
   getCurrentSong(): Song | null {
     return this.currentSongSubject.value;
   }
 
-  // Getter para acceder a la playlist actual
+  /** Devuelve la playlist actual */
   getCurrentPlaylist(): Song[] {
     return this.playlistSubject.value;
+  }
+
+  /**
+   * Actualiza múltiples canciones de la playlist por sus IDs
+   * @param songIds IDs de las canciones a actualizar
+   * @param update Datos a actualizar
+   */
+  updatePlaylistSongs(songIds: string[], update: Partial<Song>): void {
+    const playlist = this.playlistSubject.value;
+    if (playlist.length === 0) return;
+
+    const songIdSet = new Set(songIds);
+    const updatedPlaylist = playlist.map(song =>
+      songIdSet.has(song.id) ? { ...song, ...update } : song
+    );
+
+    this.playlistSubject.next(updatedPlaylist);
+
+    const current = this.currentSongSubject.value;
+    if (current && songIdSet.has(current.id)) {
+      this.currentSongSubject.next({ ...current, ...update });
+    }
   }
 }

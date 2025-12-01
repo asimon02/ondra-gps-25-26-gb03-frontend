@@ -1,36 +1,48 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
-import { forkJoin, of } from 'rxjs';
-import { switchMap, map, catchError } from 'rxjs/operators';
+import { Subscription, Subject } from 'rxjs';
+import { switchMap, map, catchError, debounceTime } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SongService, SongQueryParams, PaginatedSongsResponse } from '../../../../core/services/song.service';
 import { AlbumService, AlbumQueryParams, PaginatedAlbumsResponse } from '../../../../core/services/album.service';
 import { GenreService } from '../../../../core/services/genre.service';
 import { MusicPlayerService } from '../../../../core/services/music-player.service';
-import { Song } from '../../../../core/models/song.model';
+import { Song, SongArtist } from '../../../../core/models/song.model';
 import { Album, AlbumTrack } from '../../../../core/models/album.model';
-import { ArtistService } from '../../../../core/services/artist.service';
+import { ArtistService, ArtistQueryParams, PaginatedArtistsResponse } from '../../../../core/services/artist.service';
 import { AuthStateService } from '../../../../core/services/auth-state.service';
+import { TipoUsuario } from '../../../../core/models/auth.model';
 import { SongCardComponent } from '../../components/song-card/song-card.component';
 import { AlbumCardComponent } from '../../components/album-card/album-card.component';
+import { ArtistCardComponent, Artist } from '../../components/artist-card/artist-card.component';
 import { MusicPlayerComponent } from '../../components/music-player/music-player.component';
 import { environment } from '../../../../../enviroments/enviroment';
+import { FavoritosService } from '../../../../core/services/favoritos.service';
+import { CarritoService } from '../../../../core/services/carrito.service';
+import { of, forkJoin } from 'rxjs';
 
-type ContentType = 'songs' | 'albums';
+type ContentType = 'songs' | 'albums' | 'artists';
 type SortOption = 'most_recent' | 'oldest' | 'most_played' | 'best_rated' | 'price_asc' | 'price_desc';
 
+/**
+ * Estado de los filtros de búsqueda y ordenamiento.
+ */
 interface FilterState {
   searchTerm: string;
+  artistName: string;
   genre: string;
   priceRange: {
-    min: number;
-    max: number;
+    min: number | null;
+    max: number | null;
   };
   sortBy: SortOption;
 }
 
+/**
+ * Componente de exploración de contenido musical.
+ * Permite buscar y filtrar canciones, álbumes y artistas con paginación infinita.
+ */
 @Component({
   selector: 'app-explore',
   standalone: true,
@@ -39,6 +51,7 @@ interface FilterState {
     FormsModule,
     SongCardComponent,
     AlbumCardComponent,
+    ArtistCardComponent,
     MusicPlayerComponent
   ],
   templateUrl: './explore.component.html',
@@ -77,17 +90,37 @@ interface FilterState {
       cursor: text;
     }
 
-    .dropdown-panel {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.5rem;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-      max-height: 14rem;
-      overflow-y: auto;
+    .loading-spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f4f6;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
 
-    .dropdown-option {
-      cursor: pointer;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in-item {
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    .smooth-scroll {
+      scroll-behavior: smooth;
     }
   `]
 })
@@ -96,15 +129,18 @@ export class ExploreComponent implements OnInit, OnDestroy {
 
   displayedSongs: Song[] = [];
   displayedAlbums: Album[] = [];
+  displayedArtists: Artist[] = [];
 
   totalSongs = 0;
   totalAlbums = 0;
+  totalArtists = 0;
   currentPage = 1;
-  totalPages = 1;
-  itemsPerPage = 1000;
+  itemsPerPage = 20;
+  hasMorePages = true;
 
   availableGenres: string[] = [];
-  isLoading = true;
+  isLoading = false;
+  isLoadingMore = false;
   showPlayer = false;
   currentSongId: string | null = null;
   isSongPlaying = false;
@@ -112,16 +148,22 @@ export class ExploreComponent implements OnInit, OnDestroy {
   private genreNameToId: Record<string, string> = {};
   filters: FilterState = {
     searchTerm: '',
+    artistName: '',
     genre: '',
     priceRange: {
       min: 0,
-      max: 20
+      max: 100
     },
     sortBy: 'most_recent'
   };
 
+  private filterChange$ = new Subject<void>();
+  private scrollTimeout: any = null;
+  private isScrollLoading = false;
+
   private subscriptions = new Subscription();
   private readonly useMock = environment.useMock;
+
   readonly sortOptions: { value: SortOption; label: string }[] = [
     { value: 'most_recent', label: 'Más recientes' },
     { value: 'oldest', label: 'Más antiguos' },
@@ -139,12 +181,17 @@ export class ExploreComponent implements OnInit, OnDestroy {
     private artistService: ArtistService,
     private authState: AuthStateService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private favoritosService: FavoritosService,
+    private carritoService: CarritoService
   ) {}
 
+  /**
+   * Inicializa el componente, carga el contenido inicial y configura las suscripciones.
+   */
   ngOnInit(): void {
     const typeParam = this.route.snapshot.queryParamMap.get('type');
-    if (typeParam === 'songs' || typeParam === 'albums') {
+    if (typeParam === 'songs' || typeParam === 'albums' || typeParam === 'artists') {
       this.applyContentTypeState(typeParam);
     }
     this.syncContentTypeInUrl(this.currentContentType, true);
@@ -152,25 +199,62 @@ export class ExploreComponent implements OnInit, OnDestroy {
     this.loadGenres();
     this.loadContent();
     this.subscribeToPlayer();
+    this.subscribeToFavoriteChanges();
+
+    this.subscriptions.add(
+      this.filterChange$.pipe(
+        debounceTime(500)
+      ).subscribe(() => {
+        this.resetAndLoadContent();
+      })
+    );
   }
 
+  /**
+   * Obtiene las opciones de ordenamiento visibles según el tipo de contenido actual.
+   */
   get visibleSortOptions(): { value: SortOption; label: string }[] {
     if (this.currentContentType === 'albums') {
       return this.sortOptions.filter(opt => opt.value !== 'most_played');
     }
+    if (this.currentContentType === 'artists') {
+      return this.sortOptions.filter(opt =>
+        opt.value === 'most_recent' || opt.value === 'oldest'
+      );
+    }
     return this.sortOptions;
   }
 
+  /**
+   * Limpia las suscripciones y timeouts al destruir el componente.
+   */
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+    if (this.scrollTimeout) {
+      clearTimeout(this.scrollTimeout);
+    }
   }
 
-  
+  /**
+   * Detecta el scroll de la ventana para cargar más contenido cuando se alcanza el final.
+   */
+  @HostListener('window:scroll', ['$event'])
+  onScroll(): void {
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const scrollThreshold = document.documentElement.scrollHeight - 500;
 
-  
+    if (scrollPosition >= scrollThreshold && !this.isLoading && !this.isLoadingMore && this.hasMorePages && !this.isScrollLoading) {
+      this.isScrollLoading = true;
+
+      this.scrollTimeout = setTimeout(() => {
+        this.loadMoreContent();
+        this.isScrollLoading = false;
+      }, 1500);
+    }
+  }
 
   /**
-   * Suscribirse al estado del reproductor
+   * Configura las suscripciones al reproductor de música.
    */
   private subscribeToPlayer(): void {
     this.subscriptions.add(
@@ -188,106 +272,322 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cambia el tipo de contenido (canciones/álbumes)
+   * Configura la suscripción a cambios en favoritos para sincronizar el estado.
+   */
+  private subscribeToFavoriteChanges(): void {
+    this.subscriptions.add(
+      this.favoritosService.onFavoritoChanged.subscribe({
+        next: (event) => {
+          if (event.tipo === 'CANCIÓN') {
+            const song = this.displayedSongs.find(s => s.id === event.idContenido.toString());
+            if (song) {
+              song.isFavorite = event.accion === 'AGREGADO';
+            }
+          }
+
+          if (event.tipo === 'ÁLBUM') {
+            const album = this.displayedAlbums.find(a => a.id === event.idContenido.toString());
+            if (album) {
+              album.isFavorite = event.accion === 'AGREGADO';
+            }
+
+            if (event.idsCanciones && event.idsCanciones.length > 0) {
+              const newFavoriteState = event.accion === 'AGREGADO';
+              event.idsCanciones.forEach(idCancion => {
+                const song = this.displayedSongs.find(s => s.id === idCancion.toString());
+                if (song) {
+                  song.isFavorite = newFavoriteState;
+                }
+              });
+            }
+          }
+        },
+        error: (err) => console.error('Error en suscripción a favoritos:', err)
+      })
+    );
+  }
+
+  /**
+   * Cambia el tipo de contenido a mostrar (canciones, álbumes o artistas).
+   *
+   * @param type - Tipo de contenido a mostrar
    */
   switchContentType(type: ContentType): void {
     if (this.currentContentType === type) return;
 
     this.applyContentTypeState(type);
     this.syncContentTypeInUrl(type);
+    this.resetAndLoadContent();
+  }
+
+  /**
+   * Reinicia el estado de paginación y recarga el contenido.
+   */
+  private resetAndLoadContent(): void {
+    this.currentPage = 1;
+    this.displayedSongs = [];
+    this.displayedAlbums = [];
+    this.displayedArtists = [];
+    this.hasMorePages = true;
     this.loadContent();
   }
 
   /**
-   * Carga el contenido según el tipo seleccionado
+   * Carga el contenido según el tipo seleccionado (canciones, álbumes o artistas).
    */
   loadContent(): void {
     this.isLoading = true;
 
     if (this.currentContentType === 'songs') {
       this.loadSongs();
-    } else {
+    } else if (this.currentContentType === 'albums') {
       this.loadAlbums();
+    } else if (this.currentContentType === 'artists') {
+      this.loadArtists();
     }
   }
 
   /**
-   * Carga canciones con filtros aplicados
+   * Carga la siguiente página de contenido para scroll infinito.
+   */
+  private loadMoreContent(): void {
+    if (!this.hasMorePages) return;
+
+    this.isLoadingMore = true;
+    this.currentPage++;
+
+    if (this.currentContentType === 'songs') {
+      this.loadSongs();
+    } else if (this.currentContentType === 'albums') {
+      this.loadAlbums();
+    } else if (this.currentContentType === 'artists') {
+      this.loadArtists();
+    }
+  }
+
+  /**
+   * Carga las canciones aplicando los filtros activos.
+   * Enriquece los datos con información de artistas y favoritos.
    */
   loadSongs(): void {
     const genreId = this.filters.genre ? this.genreNameToId[this.filters.genre] : undefined;
+
+    const minPrice = this.filters.priceRange.min !== null && this.filters.priceRange.min !== undefined
+      ? Number(this.filters.priceRange.min)
+      : undefined;
+
+    const maxPrice = this.filters.priceRange.max !== null && this.filters.priceRange.max !== undefined
+      ? Number(this.filters.priceRange.max)
+      : undefined;
+
     const params: SongQueryParams = {
-      // Mantener búsqueda en cliente para incluir artistas
-      genre: this.filters.genre || undefined,
+      search: this.filters.searchTerm || undefined,
       genreId,
       orderBy: this.filters.sortBy,
+      minPrice,
+      maxPrice,
       page: this.currentPage,
       limit: this.itemsPerPage
     };
 
-    this.fetchAllSongs(params).subscribe({
-      next: (songs) => {
+    this.songService.getAllSongs(params).subscribe({
+      next: (response) => {
+        let songs = this.extractContentFromResponse<Song>(response);
+
+        if (this.filters.searchTerm && this.filters.searchTerm.trim() !== '') {
+          const searchQuery = this.filters.searchTerm.toLowerCase().trim();
+          songs = songs.filter(song => {
+            const titleMatch = song.title?.toLowerCase().includes(searchQuery);
+            const artistMatch = song.artist?.artisticName?.toLowerCase().includes(searchQuery);
+            return titleMatch || artistMatch;
+          });
+        }
+
+        if (this.filters.artistName && this.filters.artistName.trim() !== '') {
+          const artistQuery = this.filters.artistName.toLowerCase().trim();
+          songs = songs.filter(song =>
+            song.artist?.artisticName?.toLowerCase().includes(artistQuery)
+          );
+        }
+
+        const meta = this.extractPaginationMetadata(response);
+
         this.enrichArtistsForSongs(songs).pipe(
           switchMap(enriched => this.mergeFavoriteSongs(enriched))
         ).subscribe((withFavorites) => {
-          const filteredBySearch = this.applySearchFilterToSongs(withFavorites);
-          this.displayedSongs = this.applyPriceFilter(filteredBySearch, this.filters.priceRange);
-          this.totalSongs = this.displayedSongs.length;
-          this.currentPage = 1;
-          this.totalPages = 1;
-          this.isLoading = false;
+          if (this.isLoadingMore) {
+            this.displayedSongs = [...this.displayedSongs, ...withFavorites];
+          } else {
+            this.displayedSongs = withFavorites;
+          }
 
-          // Actualizar playlist en el servicio cuando cambian las canciones
+          const hasClientFilter = (this.filters.searchTerm && this.filters.searchTerm.trim() !== '') ||
+            (this.filters.artistName && this.filters.artistName.trim() !== '');
+
+          if (hasClientFilter) {
+            this.totalSongs = this.displayedSongs.length;
+            this.hasMorePages = false;
+          } else {
+            this.totalSongs = meta.totalElements;
+            this.hasMorePages = this.currentPage < meta.totalPages;
+          }
+
+          this.isLoading = false;
+          this.isLoadingMore = false;
+
           this.playerService.setPlaylist(this.displayedSongs);
         });
       },
       error: (err) => {
         console.error('Error loading songs:', err);
-        this.displayedSongs = [];
-        this.totalSongs = 0;
+        if (!this.isLoadingMore) {
+          this.displayedSongs = [];
+          this.totalSongs = 0;
+        }
         this.isLoading = false;
+        this.isLoadingMore = false;
+        this.hasMorePages = false;
       }
     });
   }
 
   /**
-   * Carga álbumes con filtros aplicados
+   * Carga los álbumes aplicando los filtros activos.
+   * Enriquece los datos con información de artistas y favoritos.
    */
   loadAlbums(): void {
     const genreId = this.filters.genre ? this.genreNameToId[this.filters.genre] : undefined;
+
+    const minPrice = this.filters.priceRange.min !== null && this.filters.priceRange.min !== undefined
+      ? Number(this.filters.priceRange.min)
+      : undefined;
+
+    const maxPrice = this.filters.priceRange.max !== null && this.filters.priceRange.max !== undefined
+      ? Number(this.filters.priceRange.max)
+      : undefined;
+
     const params: AlbumQueryParams = {
       search: this.filters.searchTerm || undefined,
-      genre: this.filters.genre || undefined,
       genreId,
       orderBy: this.filters.sortBy === 'most_played' ? 'most_recent' : this.filters.sortBy,
+      minPrice,
+      maxPrice,
       page: this.currentPage,
       limit: this.itemsPerPage
     };
 
-    this.fetchAllAlbums(params).subscribe({
-      next: (albums) => {
+    this.albumService.getAllAlbums(params).subscribe({
+      next: (response) => {
+        let albums = this.extractContentFromResponse<Album>(response);
+
+        if (this.filters.searchTerm && this.filters.searchTerm.trim() !== '') {
+          const searchQuery = this.filters.searchTerm.toLowerCase().trim();
+          albums = albums.filter(album => {
+            const titleMatch = album.title?.toLowerCase().includes(searchQuery);
+            const artistMatch = album.artist?.artisticName?.toLowerCase().includes(searchQuery);
+            return titleMatch || artistMatch;
+          });
+        }
+
+        if (this.filters.artistName && this.filters.artistName.trim() !== '') {
+          const artistQuery = this.filters.artistName.toLowerCase().trim();
+          albums = albums.filter(album =>
+            album.artist?.artisticName?.toLowerCase().includes(artistQuery)
+          );
+        }
+
+        const meta = this.extractPaginationMetadata(response);
+
         this.enrichArtistsForAlbums(albums).pipe(
           switchMap(enriched => this.mergeFavoriteAlbums(enriched))
         ).subscribe((withFavorites) => {
-          const filteredBySearch = this.applySearchFilterToAlbums(withFavorites);
-          this.displayedAlbums = this.applyPriceFilter(filteredBySearch, this.filters.priceRange);
-          this.totalAlbums = this.displayedAlbums.length;
-          this.currentPage = 1;
-          this.totalPages = 1;
+          if (this.isLoadingMore) {
+            this.displayedAlbums = [...this.displayedAlbums, ...withFavorites];
+          } else {
+            this.displayedAlbums = withFavorites;
+          }
+
+          const hasClientFilter = (this.filters.searchTerm && this.filters.searchTerm.trim() !== '') ||
+            (this.filters.artistName && this.filters.artistName.trim() !== '');
+
+          if (hasClientFilter) {
+            this.totalAlbums = this.displayedAlbums.length;
+            this.hasMorePages = false;
+          } else {
+            this.totalAlbums = meta.totalElements;
+            this.hasMorePages = this.currentPage < meta.totalPages;
+          }
+
           this.isLoading = false;
+          this.isLoadingMore = false;
         });
       },
       error: (err) => {
         console.error('Error loading albums:', err);
-        this.displayedAlbums = [];
-        this.totalAlbums = 0;
+        if (!this.isLoadingMore) {
+          this.displayedAlbums = [];
+          this.totalAlbums = 0;
+        }
         this.isLoading = false;
+        this.isLoadingMore = false;
+        this.hasMorePages = false;
       }
     });
   }
 
   /**
-   * Carga los géneros disponibles
+   * Carga los artistas aplicando los filtros activos.
+   */
+  loadArtists(): void {
+    const params: ArtistQueryParams = {
+      search: this.filters.searchTerm || undefined,
+      esTendencia: this.filters.genre === 'trending' ? true : undefined,
+      orderBy: this.filters.sortBy === 'most_recent' || this.filters.sortBy === 'oldest'
+        ? this.filters.sortBy
+        : 'most_recent',
+      page: this.currentPage - 1,
+      limit: this.itemsPerPage
+    };
+
+    this.artistService.searchArtists(params).subscribe({
+      next: (response) => {
+        const artists: Artist[] = response.content.map(dto => ({
+          id: dto.idArtista.toString(),
+          artisticName: dto.nombreArtistico,
+          profileImage: dto.fotoPerfilArtistico || null,
+          bio: dto.biografiaArtistico || null,
+          slug: dto.slugArtistico || null,
+          isTrending: dto.esTendencia,
+          startDate: dto.fechaInicioArtistico
+        }));
+
+        if (this.isLoadingMore) {
+          this.displayedArtists = [...this.displayedArtists, ...artists];
+        } else {
+          this.displayedArtists = artists;
+        }
+
+        this.totalArtists = response.totalElements;
+        this.hasMorePages = response.currentPage < response.totalPages - 1;
+
+        this.isLoading = false;
+        this.isLoadingMore = false;
+      },
+      error: (err) => {
+        console.error('Error loading artists:', err);
+        if (!this.isLoadingMore) {
+          this.displayedArtists = [];
+          this.totalArtists = 0;
+        }
+        this.isLoading = false;
+        this.isLoadingMore = false;
+        this.hasMorePages = false;
+      }
+    });
+  }
+
+  /**
+   * Carga los géneros disponibles del sistema.
    */
   loadGenres(): void {
     this.genreService.getAllGenres().subscribe({
@@ -318,21 +618,36 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Manejador de cambio de filtros
+   * Maneja los cambios en los filtros de búsqueda.
+   * Valida los rangos de precio y emite el evento de cambio con debounce.
    */
   onFilterChange(): void {
-    if (this.filters.priceRange.min > this.filters.priceRange.max) {
+    if (this.filters.priceRange.min !== null && this.filters.priceRange.min < 0) {
+      this.filters.priceRange.min = 0;
+    }
+
+    const maxAllowed = 100;
+    if (this.filters.priceRange.max !== null && this.filters.priceRange.max > maxAllowed) {
+      this.filters.priceRange.max = maxAllowed;
+    }
+
+    if (this.filters.priceRange.min !== null && this.filters.priceRange.max !== null &&
+      this.filters.priceRange.min > this.filters.priceRange.max) {
       this.filters.priceRange.min = this.filters.priceRange.max;
     }
 
-    this.currentPage = 1;
-    this.loadContent();
+    this.filterChange$.next();
   }
 
   /**
-   * Alterna el favorito de una canción
+   * Alterna el estado de favorito de una canción.
+   *
+   * @param songId - ID de la canción
    */
   onToggleFavoriteSong(songId: string): void {
+    if (!this.canUseFavorites()) {
+      return;
+    }
     this.songService.toggleFavorite(songId).subscribe({
       next: (updatedSong) => {
         const song = this.displayedSongs.find(s => s.id === songId);
@@ -340,7 +655,6 @@ export class ExploreComponent implements OnInit, OnDestroy {
           song.isFavorite = updatedSong.isFavorite;
         }
 
-        // Actualizar en el servicio si es la canción actual
         const currentSong = this.playerService.getCurrentSong();
         if (currentSong?.id === songId) {
           this.playerService.updateCurrentSong({
@@ -356,9 +670,14 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Alterna el favorito de un álbum
+   * Alterna el estado de favorito de un álbum.
+   *
+   * @param albumId - ID del álbum
    */
   onToggleFavoriteAlbum(albumId: string): void {
+    if (!this.canUseFavorites()) {
+      return;
+    }
     this.albumService.toggleFavorite(albumId).subscribe({
       next: (updatedAlbum) => {
         const album = this.displayedAlbums.find(a => a.id === albumId);
@@ -373,14 +692,15 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Reproduce una canción
+   * Reproduce una canción.
+   * Configura la playlist y registra la reproducción.
+   *
+   * @param song - Canción a reproducir
    */
   onPlaySong(song: Song): void {
-    // Actualizar playlist y reproducir
     this.playerService.setPlaylist(this.displayedSongs);
     this.playerService.playSong(song, true);
 
-    // Registrar reproducción
     this.songService.registerPlay(song.id).subscribe({
       next: (result) => {
         const displayedSong = this.displayedSongs.find(s => s.id === song.id);
@@ -394,12 +714,18 @@ export class ExploreComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Pausa la reproducción actual.
+   */
   onPauseSong(): void {
     this.playerService.pause();
   }
 
   /**
-   * Reproduce un álbum completo
+   * Reproduce un álbum completo.
+   * Carga el tracklist si es necesario y configura el reproductor.
+   *
+   * @param album - Álbum a reproducir
    */
   onPlayAlbum(album: Album): void {
     const playTracks = (tracks: AlbumTrack[]) => {
@@ -453,51 +779,34 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cierra el reproductor de música
+   * Cierra el reproductor de música.
    */
   onClosePlayer(): void {
     this.playerService.stop();
   }
 
   /**
-   * Navega a la página anterior
-   */
-  previousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.loadContent();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  /**
-   * Navega a la página siguiente
-   */
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.loadContent();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  // ========== MÉTODOS AUXILIARES ==========
-
-  /**
-   * Aplica el estado base al cambiar de tipo de contenido.
+   * Aplica el estado del tipo de contenido seleccionado.
+   * Resetea los filtros y la paginación.
+   *
+   * @param type - Tipo de contenido
    */
   private applyContentTypeState(type: ContentType): void {
     this.currentContentType = type;
     this.currentPage = 1;
-    this.filters.priceRange.max = type === 'albums' ? 50 : 20;
+    this.filters.priceRange.min = 0;
+    this.filters.priceRange.max = 100;
+    this.filters.artistName = '';
     this.filters.searchTerm = '';
     this.filters.genre = '';
     this.filters.sortBy = 'most_recent';
   }
 
   /**
-   * Sincroniza el tipo de contenido en la URL para que al volver desde detalles
-   * se restituya la pestaña correcta.
+   * Sincroniza el tipo de contenido con los parámetros de la URL.
+   *
+   * @param type - Tipo de contenido
+   * @param replaceUrl - Si debe reemplazar la URL actual
    */
   private syncContentTypeInUrl(type: ContentType, replaceUrl = false): void {
     this.router.navigate([], {
@@ -508,7 +817,10 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Extrae el contenido de la respuesta
+   * Extrae el contenido de la respuesta paginada.
+   *
+   * @param response - Respuesta de la API
+   * @returns Array de contenido
    */
   private extractContentFromResponse<T>(response: PaginatedSongsResponse | PaginatedAlbumsResponse): T[] {
     if ('content' in response && response.content) {
@@ -524,50 +836,25 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Extrae la metadata de paginación
+   * Extrae los metadatos de paginación de la respuesta.
+   *
+   * @param response - Respuesta de la API
+   * @returns Metadatos de paginación
    */
   private extractPaginationMetadata(response: PaginatedSongsResponse | PaginatedAlbumsResponse) {
     return {
       currentPage: response.currentPage || 1,
-      totalPages: response.totalPages || 0,
-      totalElements: response.totalElements || 0,
+      totalPages: response.totalPages || 0,totalElements: response.totalElements || 0,
       elementsPerPage: response.size || response.elementsPerPage || this.itemsPerPage
     };
   }
-
   /**
-   * Aplica filtros de precio en el cliente (el backend no los soporta)
+
+   Determina si un álbum está seleccionado en el reproductor.
+
+   @param album - Álbum a verificar
+   @returns true si el álbum está en reproducción
    */
-  private applyPriceFilter<T extends { price: number }>(items: T[], range: { min: number; max: number }): T[] {
-    return items.filter(item => {
-      const price = item.price ?? 0;
-      return price >= range.min && price <= range.max;
-    });
-  }
-
-  private applySearchFilterToSongs(songs: Song[]): Song[] {
-    const term = (this.filters.searchTerm || '').trim().toLowerCase();
-    if (!term) return songs;
-    return songs.filter(song => {
-      const title = song.title?.toLowerCase() ?? '';
-      const genre = song.genre?.toLowerCase() ?? '';
-      const artist = song.artist?.artisticName?.toLowerCase() ?? '';
-      return title.includes(term) || genre.includes(term) || artist.includes(term);
-    });
-  }
-
-  private applySearchFilterToAlbums(albums: Album[]): Album[] {
-    const term = (this.filters.searchTerm || '').trim().toLowerCase();
-    if (!term) return albums;
-    return albums.filter(album => {
-      const title = album.title?.toLowerCase() ?? '';
-      const description = album.description?.toLowerCase() ?? '';
-      const genre = album.genre?.toLowerCase() ?? '';
-      const artist = album.artist?.artisticName?.toLowerCase() ?? '';
-      return title.includes(term) || description.includes(term) || genre.includes(term) || artist.includes(term);
-    });
-  }
-
   isAlbumCurrentlySelected(album: Album): boolean {
     const playlist = this.playerService.getCurrentPlaylist();
     if (!playlist.length || !album.trackList || album.trackList.length === 0) {
@@ -581,75 +868,12 @@ export class ExploreComponent implements OnInit, OnDestroy {
 
     return playlist.every(song => albumIds.has(song.id));
   }
-
   /**
-   * Descarga todas las páginas de canciones
-   */
-  private fetchAllSongs(params: SongQueryParams) {
-    const limit = params.limit ?? this.itemsPerPage;
-    const baseParams = { ...params, page: 1, limit };
 
-    return this.songService.getAllSongs(baseParams).pipe(
-      switchMap((first) => {
-        const firstPageContent = this.extractContentFromResponse<Song>(first);
-        const meta = this.extractPaginationMetadata(first);
+   Enriquece las canciones con información completa de sus artistas.
 
-        if (meta.totalPages <= 1) {
-          return of(firstPageContent);
-        }
-
-        const requests = [];
-        for (let page = 2; page <= meta.totalPages; page++) {
-          requests.push(
-            this.songService.getAllSongs({ ...params, page, limit }).pipe(
-              map(res => this.extractContentFromResponse<Song>(res))
-            )
-          );
-        }
-
-        return forkJoin(requests).pipe(
-          map(rest => firstPageContent.concat(...rest)),
-          catchError(() => of(firstPageContent))
-        );
-      })
-    );
-  }
-
-  /**
-   * Descarga todas las páginas de álbumes
-   */
-  private fetchAllAlbums(params: AlbumQueryParams) {
-    const limit = params.limit ?? this.itemsPerPage;
-    const baseParams = { ...params, page: 1, limit };
-
-    return this.albumService.getAllAlbums(baseParams).pipe(
-      switchMap((first) => {
-        const firstPageContent = this.extractContentFromResponse<Album>(first);
-        const meta = this.extractPaginationMetadata(first);
-
-        if (meta.totalPages <= 1) {
-          return of(firstPageContent);
-        }
-
-        const requests = [];
-        for (let page = 2; page <= meta.totalPages; page++) {
-          requests.push(
-            this.albumService.getAllAlbums({ ...params, page, limit }).pipe(
-              map(res => this.extractContentFromResponse<Album>(res))
-            )
-          );
-        }
-
-        return forkJoin(requests).pipe(
-          map(rest => firstPageContent.concat(...rest)),
-          catchError(() => of(firstPageContent))
-        );
-      })
-    );
-  }
-
-  /**
-   * Obtiene info de artista para canciones (se basa en idArtista)
+   @param songs - Canciones a enriquecer
+   @returns Observable con las canciones enriquecidas
    */
   private enrichArtistsForSongs(songs: Song[]) {
     const uniqueIds = Array.from(new Set(songs.map(s => s.artist?.id).filter(Boolean) as string[]));
@@ -667,10 +891,16 @@ export class ExploreComponent implements OnInit, OnDestroy {
       catchError(() => of(songs))
     );
   }
+  /**
 
+   Combina el estado de favoritos con las canciones.
+
+   @param songs - Canciones a procesar
+   @returns Observable con las canciones marcadas como favoritas
+   */
   private mergeFavoriteSongs(songs: Song[]) {
-    if (this.useMock || !this.authState.isAuthenticated()) {
-      return of(songs);
+    if (this.useMock || !this.canUseFavorites()) {
+      return of(songs.map(song => ({ ...song, isFavorite: false })));
     }
     return this.songService.getFavoriteSongs().pipe(
       map((favorites) => {
@@ -682,7 +912,11 @@ export class ExploreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Obtiene info de artista para álbumes
+
+   Enriquece los álbumes con información completa de sus artistas.
+
+   @param albums - Álbumes a enriquecer
+   @returns Observable con los álbumes enriquecidos
    */
   private enrichArtistsForAlbums(albums: Album[]) {
     const uniqueIds = Array.from(new Set(albums.map(a => a.artistId || a.artist?.id).filter(Boolean) as string[]));
@@ -703,10 +937,16 @@ export class ExploreComponent implements OnInit, OnDestroy {
       catchError(() => of(albums))
     );
   }
+  /**
 
+   Combina el estado de favoritos con los álbumes.
+
+   @param albums - Álbumes a procesar
+   @returns Observable con los álbumes marcados como favoritos
+   */
   private mergeFavoriteAlbums(albums: Album[]) {
-    if (this.useMock || !this.authState.isAuthenticated()) {
-      return of(albums);
+    if (this.useMock || !this.canUseFavorites()) {
+      return of(albums.map(album => ({ ...album, isFavorite: false })));
     }
     return this.albumService.getFavoriteAlbums().pipe(
       map((favorites) => {
@@ -717,6 +957,14 @@ export class ExploreComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+
+   Asigna el artista del álbum a las canciones que no tienen artista definido.
+
+   @param tracks - Lista de canciones
+   @param album - Álbum de origen
+   @returns Canciones con el artista asignado
+   */
   private addAlbumArtistToTracks(tracks: (Song | AlbumTrack)[], album: Album): AlbumTrack[] {
     return tracks.map(track => {
       const trackNumber = (track as AlbumTrack).trackNumber ?? 0;
@@ -725,5 +973,97 @@ export class ExploreComponent implements OnInit, OnDestroy {
       }
       return { ...track, artist: album.artist, trackNumber } as AlbumTrack;
     });
+  }
+
+  /**
+
+   Agrega una canción al carrito de compras.
+
+   @param song - Canción a agregar
+   */
+  onAddSongToCart(song: Song): void {
+    if (!this.canUseCart()) {
+      return;
+    }
+
+    this.carritoService.agregarItem({
+      tipoProducto: 'CANCIÓN',
+      idCancion: Number(song.id)
+    }).subscribe({
+      next: () => {},
+      error: (err) => {
+        console.error('Error al añadir canción al carrito:', err);
+        if (err.error?.message?.includes('ya está en el carrito')) {
+          alert('Esta canción ya está en tu carrito');
+        } else {
+          alert('Error al añadir la canción al carrito. Por favor, intenta de nuevo.');
+        }
+      }
+    });
+  }
+  /**
+
+   Agrega un álbum al carrito de compras.
+
+   @param album - Álbum a agregar
+   */
+  onAddAlbumToCart(album: Album): void {
+    if (!this.canUseCart()) {
+      return;
+    }
+
+    this.carritoService.agregarItem({
+      tipoProducto: 'ÁLBUM',
+      idAlbum: Number(album.id)
+    }).subscribe({
+      next: () => {},
+      error: (err) => {
+        console.error('Error al añadir álbum al carrito:', err);
+        if (err.error?.message?.includes('ya está en el carrito')) {
+          alert('Este álbum ya está en tu carrito');
+        } else {
+          alert('Error al añadir el álbum al carrito. Por favor, intenta de nuevo.');
+        }
+      }
+    });
+  }
+  /**
+
+   Determina si se deben mostrar las acciones de favoritos.
+   */
+  get canShowFavoriteActions(): boolean {
+    return this.canUseFavorites();
+  }
+
+  /**
+
+   Determina si se deben mostrar las acciones de compra.
+   */
+  get canShowPurchaseActions(): boolean {
+    return this.canUseCart();
+  }
+
+  /**
+
+   Verifica si el usuario puede usar la funcionalidad de favoritos.
+   Los artistas no pueden marcar contenido como favorito.
+
+   @returns true si el usuario puede usar favoritos
+   */
+  private canUseFavorites(): boolean {
+    const user = this.authState.getUserInfo();
+    return this.authState.isAuthenticated() && user?.tipoUsuario !== TipoUsuario.ARTISTA;
+  }
+
+  /**
+
+   Verifica si el usuario puede usar el carrito de compras.
+   Los artistas no pueden comprar contenido.
+
+   @returns true si el usuario puede usar el carrito
+   */
+  private canUseCart(): boolean {
+    const user = this.authState.getUserInfo();
+    return this.authState.isAuthenticated() && user?.tipoUsuario !== TipoUsuario.ARTISTA;
   }
 }

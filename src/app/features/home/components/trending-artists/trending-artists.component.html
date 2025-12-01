@@ -24,9 +24,9 @@
     @if (!isLoading && !error && artistas.length > 0) {
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         @for (artista of artistas; track artista.idArtista) {
-          <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+          <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col">
 
-            <!-- ✅ Foto del artista - CLICKEABLE -->
+          <!-- Foto del artista - CLICKEABLE -->
             <div
               (click)="navegarAPerfilArtista(artista)"
               class="w-full aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden relative cursor-pointer group">
@@ -38,8 +38,8 @@
             </div>
 
             <!-- Información del artista -->
-            <div class="p-6">
-              <!-- ✅ Nombre también clickeable -->
+            <div class="p-6 flex flex-col flex-grow">
+            <!-- Nombre también clickeable -->
               <h3
                 (click)="navegarAPerfilArtista(artista)"
                 class="text-xl font-semibold text-gray-800 cursor-pointer hover:text-primary transition-colors">
@@ -60,7 +60,7 @@
               <!-- Botón de acción -->
               <button
                 (click)="navegarAPerfilArtista(artista)"
-                class="mt-5 w-full bg-blue-600 text-white cursor-pointer py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium">
+                class="mt-auto w-full bg-blue-600 text-white cursor-pointer py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium">
                 Escuchar
               </button>
             </div>

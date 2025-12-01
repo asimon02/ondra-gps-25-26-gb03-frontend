@@ -48,3 +48,16 @@ logs/
 # System files
 .DS_Store
 Thumbs.db
+
+# Documentación generada
+/docs
+/documentation
+/dist-docs
+
+# JSDoc/Compodoc
+.compodoc
+
+# TypeDoc
+/typedoc-out
+
+*.jsdoc.cache

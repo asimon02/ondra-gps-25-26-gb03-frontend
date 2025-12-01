@@ -1,5 +1,3 @@
-<!-- src/app/features/user-profile/components/profile-header/profile-header.component.html -->
-
 <!-- Tarjeta Principal del Perfil -->
 <div class="bg-white rounded-lg shadow-sm p-8 border border-blue-900 h-full flex flex-col justify-between">
   <div class="flex flex-col items-center space-y-6">
@@ -12,14 +10,14 @@
           : 'w-48 h-48 rounded-full overflow-hidden border-4 border-gray-100 relative'"
         (click)="onPhotoClick()">
 
-        <!-- ✅ Foto real si existe -->
+        <!-- Foto real si existe -->
         <img
           *ngIf="hasPhoto"
           [src]="displayPhoto"
           [alt]="displayName"
           class="w-full h-full object-cover absolute inset-0">
 
-        <!-- ✅ Iniciales con gradiente si NO hay foto -->
+        <!-- Iniciales con gradiente si NO hay foto -->
         <div
           *ngIf="!hasPhoto"
           class="w-full h-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center absolute inset-0">
@@ -58,7 +56,7 @@
         <h1 class="text-2xl font-bold text-gray-900">
           {{ displayName }}
         </h1>
-        <!-- ✅ Badge de verificado (solo para artistas) -->
+        <!-- Badge de verificado (solo para artistas) -->
         <svg
           *ngIf="isArtist"
           class="w-6 h-6 text-blue-500 flex-shrink-0 translate-y-1"
@@ -84,36 +82,36 @@
     <!-- Estadísticas -->
     <div *ngIf="estadisticas" class="w-full space-y-3 pt-4">
 
-      <!-- ✅ Para ARTISTAS: Solo Seguidores (centrado) -->
+      <!--  Para ARTISTAS: Solo Seguidores (centrado) -->
       <div *ngIf="isArtist" class="flex justify-center">
         <button
           (click)="openModal('seguidores')"
           class="flex flex-col items-center hover:bg-gray-50 rounded-lg p-4 transition-colors cursor-pointer min-w-[120px]">
-          <span class="text-2xl font-bold text-gray-900">{{ estadisticas?.seguidores }}</span>
+          <span class="text-2xl font-bold text-gray-900">{{ estadisticas.seguidores }}</span>
           <span class="text-xs text-neutral">Seguidores</span>
         </button>
       </div>
 
-      <!-- ✅ Para USUARIOS NORMALES: Seguidos y Seguidores (grid 2 columnas) -->
+      <!--  Para USUARIOS NORMALES: Seguidos y Seguidores (grid 2 columnas) -->
       <div *ngIf="!isArtist" class="grid grid-cols-2 gap-4">
         <button
           (click)="openModal('seguidos')"
           class="flex flex-col items-center justify-center hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer">
-          <span class="text-2xl font-bold text-gray-900">{{ estadisticas?.seguidos }}</span>
+          <span class="text-2xl font-bold text-gray-900">{{ estadisticas.seguidos }}</span>
           <span class="text-xs text-neutral">Seguidos</span>
         </button>
 
         <button
           (click)="openModal('seguidores')"
           class="flex flex-col items-center justify-center hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer">
-          <span class="text-2xl font-bold text-gray-900">{{ estadisticas?.seguidores }}</span>
+          <span class="text-2xl font-bold text-gray-900">{{ estadisticas.seguidores }}</span>
           <span class="text-xs text-neutral">Seguidores</span>
         </button>
       </div>
 
     </div>
 
-    <!-- ✅ Reproducciones totales (solo para artistas, ANTES del botón seguir) -->
+    <!--  Reproducciones totales (solo para artistas, ANTES del botón seguir) -->
     <div
       *ngIf="isArtist && totalReproducciones !== null && totalReproducciones !== undefined"
       class="w-full">
@@ -128,7 +126,7 @@
       </div>
     </div>
 
-    <!-- ✅ Botón Seguir/Siguiendo (solo en vista pública y NO es propio perfil) -->
+    <!--  Botón Seguir/Siguiendo (solo en vista pública y NO es propio perfil) -->
     <div
       *ngIf="isPublicView && !isOwnProfile && showFollowButton"
       class="w-full pt-2">

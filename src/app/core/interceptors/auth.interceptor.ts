@@ -3,13 +3,17 @@ import { inject } from '@angular/core';
 import { AuthStateService } from '../../core/services/auth-state.service';
 
 /**
- * Interceptor que agrega el token JWT a las peticiones
+ * Interceptor HTTP que agrega automáticamente el token JWT de autorización
+ * a las peticiones dirigidas a la API.
+ *
+ * Solo añade el header Authorization si:
+ * - Existe un token válido en el estado de autenticación
+ * - La URL de la petición incluye '/api/'
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authState = inject(AuthStateService);
   const fullToken = authState.getFullAuthToken();
 
-  // Solo agregar token si existe y la URL es de la API
   if (fullToken && req.url.includes('/api/')) {
     const clonedRequest = req.clone({
       setHeaders: { Authorization: fullToken }

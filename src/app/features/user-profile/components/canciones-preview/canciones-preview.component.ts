@@ -16,12 +16,34 @@ import { AuthStateService } from '../../../../core/services/auth-state.service';
   styleUrls: ['./canciones-preview.component.scss']
 })
 export class CancionesPreviewComponent implements OnInit {
+  /**
+   * ID del artista cuyas canciones deben mostrarse.
+   */
   @Input() artistaId?: number;
-  @Input() nombreArtista?: string; // ✅ CAMBIAR A nombreArtista (sin "ico")
+
+  /**
+   * Nombre del artista asociado a las canciones.
+   */
+  @Input() nombreArtista?: string;
+
+  /**
+   * Indica si el perfil visualizado pertenece al usuario autenticado.
+   */
   @Input() isOwnProfile: boolean = false;
 
+  /**
+   * Lista mapeada de canciones para el componente de carrusel.
+   */
   canciones: CarouselItem[] = [];
+
+  /**
+   * Indica si los datos están siendo cargados.
+   */
   isLoading = true;
+
+  /**
+   * Mensaje de error mostrado al usuario.
+   */
   errorMessage = '';
 
   constructor(
@@ -32,13 +54,11 @@ export class CancionesPreviewComponent implements OnInit {
     private authState: AuthStateService
   ) {}
 
+  /**
+   * Hook de inicialización.
+   * Si se ha recibido un ID de artista, carga las canciones asociadas.
+   */
   ngOnInit(): void {
-    console.log('🎵 CancionesPreview - Inputs recibidos:', {
-      artistaId: this.artistaId,
-      nombreArtista: this.nombreArtista, // ✅ Verificar qué llega
-      isOwnProfile: this.isOwnProfile
-    });
-
     if (this.artistaId) {
       this.cargarCanciones();
     } else {
@@ -46,6 +66,10 @@ export class CancionesPreviewComponent implements OnInit {
     }
   }
 
+  /**
+   * Obtiene las canciones del artista desde el servicio correspondiente
+   * y las mapea al formato requerido por el carrusel.
+   */
   cargarCanciones(): void {
     if (!this.artistaId) {
       this.isLoading = false;
@@ -57,23 +81,18 @@ export class CancionesPreviewComponent implements OnInit {
 
     this.songService.obtenerCancionesPorArtista(this.artistaId).subscribe({
       next: (canciones: CancionDTO[]) => {
-        console.log('✅ Canciones cargadas:', canciones);
-        console.log('🎨 Nombre artista a usar:', this.nombreArtista);
-
         this.canciones = canciones.map((cancion: CancionDTO) => ({
           id: cancion.idCancion,
           nombre: cancion.tituloCancion,
-          artista: this.nombreArtista || 'Artista Desconocido', // ✅ USAR nombreArtista
+          artista: this.nombreArtista || 'Artista desconocido',
           tipo: 'canción' as const,
           imagen: cancion.urlPortada || 'https://via.placeholder.com/300x300?text=Sin+Portada'
         }));
 
-        console.log('🎵 Primera canción mapeada:', this.canciones[0]);
-
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Error al cargar canciones:', error);
+        console.error('Error al cargar canciones:', error);
         this.errorMessage = 'No se pudieron cargar las canciones';
         this.canciones = [];
         this.isLoading = false;
@@ -81,25 +100,34 @@ export class CancionesPreviewComponent implements OnInit {
     });
   }
 
+  /**
+   * Navega a la vista para subir una nueva canción.
+   */
   onAddCancion(): void {
     this.router.navigate([`/perfil/subir-cancion`]);
   }
 
+  /**
+   * Maneja la acción de clic en un elemento del carrusel.
+   * @param item Canción seleccionada.
+   */
   onItemClick(item: CarouselItem): void {
-    console.log('Canción clickeada:', item);
-    this.router.navigate([`/song/${item.id}`]);
+    this.router.navigate([`/cancion/${item.id}`]);
   }
 
+  /**
+   * Reproduce la canción seleccionada.
+   * Carga los datos completos de la canción, establece la playlist
+   * y registra la reproducción si el usuario está autenticado.
+   *
+   * @param item Canción seleccionada.
+   */
   onPlayClick(item: CarouselItem): void {
-    console.log('Reproducir canción:', item);
-    // Cargar la canción completa desde la API usando el core service
     this.coreSongService.getSongById(item.id.toString()).subscribe({
       next: (song) => {
-        // Establecer playlist con la canción
         this.playerService.setPlaylist([song]);
-        // Reproducir la canción con auto-play
         this.playerService.playSong(song, true);
-        // Registrar reproducción solo si hay sesión
+
         if (this.authState.isAuthenticated()) {
           this.coreSongService.registerPlay(song.id).subscribe({
             error: (err) => console.error('Error registering play:', err)

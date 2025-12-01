@@ -3,8 +3,9 @@ import { Router, CanActivateFn } from '@angular/router';
 import { AuthStateService } from '../../core/services/auth-state.service';
 
 /**
- * Guard para proteger rutas que requieren autenticación
- * Solo permite acceso si el usuario está autenticado
+ * Guard que protege rutas que requieren autenticación.
+ * Solo permite acceso si el usuario está autenticado.
+ * Redirige al login guardando la URL de destino original.
  */
 export const authGuard: CanActivateFn = (route, state) => {
   const authState = inject(AuthStateService);
@@ -14,7 +15,6 @@ export const authGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  // Redirigir al login y guardar la URL a la que intentaba acceder
   router.navigate(['/login'], {
     queryParams: { returnUrl: state.url }
   });
@@ -22,8 +22,9 @@ export const authGuard: CanActivateFn = (route, state) => {
 };
 
 /**
- * Guard para rutas que NO deben ser accesibles si ya estás autenticado
- * Ejemplo: página de login, registro
+ * Guard que previene el acceso a rutas cuando el usuario ya está autenticado.
+ * Útil para páginas de login y registro.
+ * Redirige al home si el usuario está autenticado.
  */
 export const noAuthGuard: CanActivateFn = (route, state) => {
   const authState = inject(AuthStateService);
@@ -33,14 +34,23 @@ export const noAuthGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  // Si ya está autenticado, redirigir al home
   router.navigate(['/']);
   return false;
 };
 
 /**
- * Guard para verificar el tipo de usuario
- * Solo permite acceso si el usuario tiene el tipo especificado
+ * Factory que crea un guard basado en roles de usuario.
+ *
+ * @param allowedRoles - Array de tipos de usuario permitidos
+ * @returns CanActivateFn que valida si el usuario tiene uno de los roles permitidos
+ *
+ * @example
+ * ```typescript
+ * {
+ *   path: 'admin',
+ *   canActivate: [roleGuard(['ADMIN', 'SUPERADMIN'])]
+ * }
+ * ```
  */
 export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
   return (route, state) => {
@@ -58,7 +68,6 @@ export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
       return true;
     }
 
-    // No tiene el rol necesario
     router.navigate(['/']);
     return false;
   };

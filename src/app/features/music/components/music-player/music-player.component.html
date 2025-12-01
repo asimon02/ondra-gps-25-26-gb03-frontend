@@ -10,7 +10,7 @@
     <!-- LEFT: Cover + info (ANCHO FIJO) -->
     <div class="flex items-center gap-3 w-64 flex-shrink-0">
       <a
-        [routerLink]="['/song', currentSong.id]"
+        [routerLink]="['/cancion', currentSong.id]"
         class="flex items-center gap-3 w-full min-w-0 group/song-link"
       >
         <img
@@ -31,6 +31,7 @@
 
       <!-- Heart -->
       <button
+        *ngIf="canShowFavorite"
         (click)="onToggleFavorite()"
         class="transition flex-shrink-0"
         [class.text-red-500]="currentSong.isFavorite"

@@ -1,5 +1,3 @@
-// src/app/features/albums/services/album.service.ts
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -15,6 +13,11 @@ import {
   EstadisticasArtistaDTO
 } from '../models/album.model';
 
+/**
+ * Servicio para gestión de álbumes musicales.
+ * Proporciona métodos para listar, buscar, crear, editar y eliminar álbumes,
+ * así como gestionar las canciones dentro de cada álbum.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -23,8 +26,10 @@ export class AlbumService {
   private apiUrl = `${environment.apis.contenidos}/albumes`;
 
   /**
-   * GET /api/albumes
-   * Lista álbumes con filtros y paginación
+   * Lista álbumes con opciones de filtrado, ordenamiento y paginación.
+   *
+   * @param filtros - Objeto opcional con criterios de filtrado y paginación
+   * @returns Observable con respuesta paginada de álbumes
    */
   listarAlbumes(filtros?: {
     artistId?: number;
@@ -49,24 +54,31 @@ export class AlbumService {
   }
 
   /**
-   * GET /api/albumes/{id}
-   * Obtiene un álbum por ID con trackList completo
+   * Obtiene los detalles completos de un álbum por su ID.
+   * Incluye el tracklist completo con todas las canciones.
+   *
+   * @param id - ID del álbum
+   * @returns Observable con detalles completos del álbum
    */
   obtenerAlbum(id: number): Observable<AlbumDetalleDTO> {
     return this.http.get<AlbumDetalleDTO>(`${this.apiUrl}/${id}`);
   }
 
   /**
-   * GET /api/albumes/artist/{artistId}
-   * Obtiene todos los álbumes de un artista
+   * Obtiene todos los álbumes de un artista específico.
+   *
+   * @param artistId - ID del artista
+   * @returns Observable con array de álbumes del artista
    */
   obtenerAlbumesPorArtista(artistId: number): Observable<AlbumDTO[]> {
     return this.http.get<AlbumDTO[]>(`${this.apiUrl}/artist/${artistId}`);
   }
 
   /**
-   * GET /api/albumes/search?q={query}
-   * Busca álbumes por término
+   * Busca álbumes por término de búsqueda.
+   *
+   * @param query - Término de búsqueda
+   * @returns Observable con array de álbumes que coinciden con la búsqueda
    */
   buscarAlbumes(query: string): Observable<AlbumDTO[]> {
     return this.http.get<AlbumDTO[]>(`${this.apiUrl}/search`, {
@@ -75,32 +87,39 @@ export class AlbumService {
   }
 
   /**
-   * GET /api/albumes/{id}/tracks
-   * Obtiene las canciones de un álbum ordenadas por número de pista
+   * Obtiene las canciones de un álbum ordenadas por número de pista.
+   *
+   * @param id - ID del álbum
+   * @returns Observable con array de canciones del álbum
    */
   obtenerCancionesAlbum(id: number): Observable<CancionAlbumDTO[]> {
     return this.http.get<CancionAlbumDTO[]>(`${this.apiUrl}/${id}/tracks`);
   }
 
   /**
-   * GET /api/albumes/gratuitos
-   * Obtiene álbumes gratuitos
+   * Obtiene álbumes con precio gratuito (precio = 0).
+   *
+   * @returns Observable con array de álbumes gratuitos
    */
   obtenerAlbumesGratuitos(): Observable<AlbumDTO[]> {
     return this.http.get<AlbumDTO[]>(`${this.apiUrl}/gratuitos`);
   }
 
   /**
-   * GET /api/albumes/genre/{genreId}
-   * Obtiene álbumes por género
+   * Obtiene álbumes filtrados por género musical.
+   *
+   * @param genreId - ID del género musical
+   * @returns Observable con array de álbumes del género especificado
    */
   obtenerAlbumesPorGenero(genreId: number): Observable<AlbumDTO[]> {
     return this.http.get<AlbumDTO[]>(`${this.apiUrl}/genre/${genreId}`);
   }
 
   /**
-   * GET /api/albumes/top-rated?limit={limit}
-   * Obtiene álbumes mejor valorados
+   * Obtiene los álbumes mejor valorados.
+   *
+   * @param limit - Número máximo de álbumes a retornar (default: 10)
+   * @returns Observable con array de álbumes ordenados por valoración
    */
   obtenerAlbumesMejorValorados(limit: number = 10): Observable<AlbumDTO[]> {
     return this.http.get<AlbumDTO[]>(`${this.apiUrl}/top-rated`, {
@@ -109,8 +128,10 @@ export class AlbumService {
   }
 
   /**
-   * GET /api/albumes/recent?limit={limit}
-   * Obtiene álbumes más recientes
+   * Obtiene los álbumes más recientes.
+   *
+   * @param limit - Número máximo de álbumes a retornar (default: 10)
+   * @returns Observable con array de álbumes ordenados por fecha de publicación
    */
   obtenerAlbumesRecientes(limit: number = 10): Observable<AlbumDTO[]> {
     return this.http.get<AlbumDTO[]>(`${this.apiUrl}/recent`, {
@@ -119,48 +140,68 @@ export class AlbumService {
   }
 
   /**
-   * GET /api/albumes/artist/{artistId}/stats
-   * Obtiene las estadísticas de reproducciones totales de un artista
+   * Obtiene estadísticas de reproducción totales de un artista.
+   *
+   * @param artistId - ID del artista
+   * @returns Observable con estadísticas del artista
    */
   obtenerEstadisticasArtista(artistId: number): Observable<EstadisticasArtistaDTO> {
     return this.http.get<EstadisticasArtistaDTO>(`${this.apiUrl}/artist/${artistId}/stats`);
   }
 
   /**
-   * POST /api/albumes
-   * Crea un nuevo álbum (requiere autenticación y rol ARTISTA)
+   * Crea un nuevo álbum.
+   * Requiere autenticación y rol ARTISTA.
+   *
+   * @param datos - Datos del álbum a crear
+   * @returns Observable con el álbum creado
    */
   crearAlbum(datos: CrearAlbumDTO): Observable<AlbumDTO> {
     return this.http.post<AlbumDTO>(this.apiUrl, datos);
   }
 
   /**
-   * PUT /api/albumes/{id}
-   * Actualiza un álbum existente (requiere ser propietario)
+   * Actualiza un álbum existente.
+   * Requiere ser propietario del álbum.
+   *
+   * @param id - ID del álbum a actualizar
+   * @param datos - Datos a actualizar (campos opcionales)
+   * @returns Observable con el álbum actualizado
    */
   actualizarAlbum(id: number, datos: EditarAlbumDTO): Observable<AlbumDTO> {
     return this.http.put<AlbumDTO>(`${this.apiUrl}/${id}`, datos);
   }
 
   /**
-   * DELETE /api/albumes/{id}
-   * Elimina un álbum (requiere ser propietario)
+   * Elimina un álbum.
+   * Requiere ser propietario del álbum.
+   *
+   * @param id - ID del álbum a eliminar
+   * @returns Observable que completa cuando se elimina el álbum
    */
   eliminarAlbum(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   /**
-   * POST /api/albumes/{id}/tracks
-   * Agrega una canción a un álbum (requiere ser propietario)
+   * Agrega una canción existente a un álbum.
+   * Requiere ser propietario del álbum.
+   *
+   * @param idAlbum - ID del álbum
+   * @param datos - ID de la canción y número de pista
+   * @returns Observable que completa cuando se agrega la canción
    */
   agregarCancionAlAlbum(idAlbum: number, datos: AgregarCancionAlbumDTO): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${idAlbum}/tracks`, datos);
   }
 
   /**
-   * DELETE /api/albumes/{id}/tracks/{songId}
-   * Elimina una canción de un álbum (requiere ser propietario)
+   * Elimina una canción de un álbum.
+   * Requiere ser propietario del álbum.
+   *
+   * @param idAlbum - ID del álbum
+   * @param idCancion - ID de la canción a eliminar
+   * @returns Observable que completa cuando se elimina la canción
    */
   eliminarCancionDeAlbum(idAlbum: number, idCancion: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${idAlbum}/tracks/${idCancion}`);

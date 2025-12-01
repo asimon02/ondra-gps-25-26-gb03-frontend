@@ -68,6 +68,7 @@
 
       <!-- Favorite Button -->
       <button
+        *ngIf="canFavorite"
         (click)="onToggleFavorite($event)"
         class="ml-2 flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors duration-200 z-10"
         [class.text-red-500]="album.isFavorite"
@@ -116,9 +117,10 @@
 
         <!-- Price -->
         <span class="text-lg font-bold text-primary">
-          {{ album.price === 0 ? 'Gratis' : (album.price | currency:'EUR':'symbol':'1.2-2') }}
+          {{ album.price === 0 ? 'Gratis' : (album.price | number:'1.2-2') + ' €' }}
         </span>
       </div>
     </div>
+
   </div>
 </div>

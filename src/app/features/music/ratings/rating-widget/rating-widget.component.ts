@@ -6,6 +6,10 @@ import { ValoracionDTO } from '../../../../core/models/ratings.model';
 import { StarRatingComponent } from '../star-rating/star-rating.component';
 import { finalize } from 'rxjs/operators';
 
+/**
+ * Componente de valoración para canciones o álbumes
+ * Permite ver la media, valorar y eliminar valoraciones propias
+ */
 @Component({
   selector: 'rating-widget',
   standalone: true,
@@ -16,14 +20,26 @@ import { finalize } from 'rxjs/operators';
   }
 })
 export class RatingWidgetComponent implements OnInit, OnChanges {
+  /** ID del contenido a valorar */
   @Input({ required: true }) contentId!: number;
+
+  /** Tipo de contenido: 'song' o 'album' */
   @Input({ required: true }) type!: RatingContentType;
 
+  /** Valoración promedio del contenido */
   average: number | null = null;
+
+  /** Indica si hay valoraciones */
   hasRatings = false;
+
+  /** Valoración del usuario actual (si existe) */
   userRating: ValoracionDTO | null = null;
+
+  /** Flags de estado para evitar acciones simultáneas */
   isSaving = false;
   isRemoving = false;
+
+  /** Mensaje de error para la UI */
   errorMessage = '';
 
   constructor(
@@ -41,34 +57,38 @@ export class RatingWidgetComponent implements OnInit, OnChanges {
     }
   }
 
+  /** Retorna si el usuario está autenticado */
   get isAuthenticated(): boolean {
     return !!this.authState.isAuthenticated();
   }
 
+  /** Redondea la valoración promedio para mostrar en estrellas */
   get averageRounded(): number {
     return this.average ? Math.round(this.average) : 0;
   }
 
+  /**
+   * Handler para cuando el usuario puntúa el contenido
+   * Crea o actualiza la valoración según corresponda
+   */
   onRated(value: number): void {
     if (!this.isAuthenticated) {
-      this.errorMessage = 'Inicia sesion para valorar.';
+      this.errorMessage = 'Inicia sesión para valorar.';
       return;
     }
-
-    if (!this.contentId || !this.type || this.isSaving) {
-      return;
-    }
+    if (!this.contentId || !this.type || this.isSaving) return;
 
     this.errorMessage = '';
     this.isSaving = true;
+
     const request$ = this.userRating
       ? this.ratingsService.updateRating(this.userRating.idValoracion, { valor: value })
       : this.ratingsService.createRating({
-          tipoContenido: this.type === 'song' ? 'CANCION' : 'ALBUM',
-          idCancion: this.type === 'song' ? this.getNumericContentId() : null,
-          idAlbum: this.type === 'album' ? this.getNumericContentId() : null,
-          valor: value
-        });
+        tipoContenido: this.type === 'song' ? 'CANCIÓN' : 'ÁLBUM',
+        idCancion: this.type === 'song' ? this.getNumericContentId() : null,
+        idAlbum: this.type === 'album' ? this.getNumericContentId() : null,
+        valor: value
+      });
 
     request$
       .pipe(finalize(() => { this.isSaving = false; }))
@@ -78,15 +98,16 @@ export class RatingWidgetComponent implements OnInit, OnChanges {
           this.loadAverage();
         },
         error: () => {
-          this.errorMessage = 'No se pudo guardar tu valoracion. Intentalo de nuevo.';
+          this.errorMessage = 'No se pudo guardar tu valoración. Inténtalo de nuevo.';
         }
       });
   }
 
+  /**
+   * Elimina la valoración actual del usuario
+   */
   onDeleteRating(): void {
-    if (!this.userRating || this.isRemoving) {
-      return;
-    }
+    if (!this.userRating || this.isRemoving) return;
 
     this.errorMessage = '';
     this.isRemoving = true;
@@ -99,19 +120,21 @@ export class RatingWidgetComponent implements OnInit, OnChanges {
           this.loadAverage();
         },
         error: () => {
-          this.errorMessage = 'No se pudo eliminar la valoracion.';
+          this.errorMessage = 'No se pudo eliminar la valoración.';
         }
       });
   }
 
+  /**
+   * Carga datos iniciales: media y valoración del usuario
+   */
   private loadData(): void {
-    if (!this.contentId || !this.type) {
-      return;
-    }
+    if (!this.contentId || !this.type) return;
     this.loadAverage();
     this.loadUserRating();
   }
 
+  /** Obtiene la valoración promedio del contenido */
   private loadAverage(): void {
     this.ratingsService.getAverageRating(this.getNumericContentId(), this.type).subscribe({
       next: (response) => {
@@ -125,6 +148,7 @@ export class RatingWidgetComponent implements OnInit, OnChanges {
     });
   }
 
+  /** Obtiene la valoración del usuario actual, si existe */
   private loadUserRating(): void {
     if (!this.isAuthenticated) {
       this.userRating = null;
@@ -132,15 +156,12 @@ export class RatingWidgetComponent implements OnInit, OnChanges {
     }
 
     this.ratingsService.getUserRating(this.getNumericContentId(), this.type).subscribe({
-      next: (rating) => {
-        this.userRating = rating;
-      },
-      error: () => {
-        this.userRating = null;
-      }
+      next: (rating) => this.userRating = rating,
+      error: () => this.userRating = null
     });
   }
 
+  /** Convierte contentId a número */
   private getNumericContentId(): number {
     return Number(this.contentId);
   }

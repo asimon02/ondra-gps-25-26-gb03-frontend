@@ -1,14 +1,12 @@
-<!-- src/app/features/user-profile/components/purchases-preview/purchases-preview.component.html -->
-
 <div *ngIf="!isLoading">
   <app-content-carousel
     [items]="compras"
     title="Mis Compras"
     icon="purchase"
     [showAddButton]="false"
+    [showPlayButton]="false"
     emptyMessage="Aún no has realizado ninguna compra"
-    (itemClick)="onItemClick($event)"
-    (playClick)="onPlayClick($event)">
+    (itemClick)="onItemClick($event)">
   </app-content-carousel>
 </div>
 

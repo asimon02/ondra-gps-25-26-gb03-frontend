@@ -1,61 +1,65 @@
-<section class="bg-white border border-gray-200 shadow-xl rounded-3xl p-6 sm:p-8 space-y-6">
+<section class="bg-white border border-gray-200 shadow-xl rounded-3xl p-6 sm:p-8 space-y-4">
   <div class="flex items-center justify-between gap-4">
     <h2 class="text-2xl font-bold text-gray-900 leading-tight">
       Comentarios <span class="text-gray-500 text-lg">({{ totalElements }})</span>
     </h2>
   </div>
 
-  <div class="bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 shadow-sm">
+  <div *ngIf="isAuthenticated" class="bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 shadow-sm">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex gap-3 items-start">
-      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow flex-shrink-0">
-        <ng-container *ngIf="isAuthenticated; else anonymousAvatar">
-          {{ userLetter }}
-        </ng-container>
-        <ng-template #anonymousAvatar>
-          <span>?</span>
-        </ng-template>
+      <!-- Avatar del usuario autenticado -->
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow flex-shrink-0 overflow-hidden">
+        <img
+          *ngIf="currentUserPhoto"
+          [src]="currentUserPhoto"
+          alt="Tu foto"
+          class="w-full h-full object-cover"
+        />
+        <span *ngIf="!currentUserPhoto">{{ userLetter }}</span>
       </div>
 
       <div class="flex-1 space-y-2">
-        <textarea
-          formControlName="contenido"
-          class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[64px]"
-          placeholder="Escribe un comentario..."
-          [attr.maxlength]="1000"
-        ></textarea>
-
-        <div class="flex items-center justify-between text-xs text-gray-500">
-          <span class="text-red-600 font-medium" *ngIf="form.get('contenido')?.invalid && form.get('contenido')?.touched">
-            El comentario es obligatorio y maximo 1000 caracteres.
-          </span>
-          <span *ngIf="form.get('contenido')?.value as value">
+        <div class="flex items-start gap-3">
+          <div class="relative flex-1">
+          <textarea
+            formControlName="contenido"
+            rows="1"
+            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 pr-16 py-2.5 text-sm leading-normal focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-[44px] min-h-0"
+            placeholder="Escribe un comentario..."
+            [attr.maxlength]="1000"
+          ></textarea>
+            <span
+              *ngIf="form.get('contenido')?.value as value"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-500"
+            >
             {{ (value?.length || 0) }}/1000
           </span>
-        </div>
+          </div>
 
-        <div class="flex items-center gap-2">
           <button
             type="submit"
-            [disabled]="!isAuthenticated || form.invalid || isSubmitting"
-            class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            [disabled]="form.invalid || isSubmitting"
+            class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 h-[42px] rounded-lg font-semibold shadow hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8m-4-4v8m9-4a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Publicar
           </button>
-          <span *ngIf="isSubmitting" class="text-xs text-blue-600 font-semibold animate-pulse">Enviando...</span>
         </div>
 
-        <p *ngIf="!isAuthenticated" class="text-xs text-gray-600 bg-gray-50 border border-dashed border-gray-300 rounded-lg px-3 py-2">
-          Necesitas iniciar sesion para comentar.
-        </p>
+        <div class="text-xs text-red-600 font-medium" *ngIf="form.get('contenido')?.invalid && form.get('contenido')?.touched">
+          El comentario es obligatorio y máximo 1000 caracteres.
+        </div>
+
+        <span *ngIf="isSubmitting" class="text-xs text-blue-600 font-semibold animate-pulse">Enviando...</span>
       </div>
     </form>
   </div>
 
-  <div class="min-h-[120px]">
-    <div *ngIf="isLoading" class="flex items-center gap-3 text-gray-600">
+  <!-- Contenedor con altura fija y scroll -->
+  <div class="h-[350px] flex flex-col">
+    <div *ngIf="isLoading" class="flex items-center gap-3 text-gray-600 justify-center py-8">
       <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
       <p>Cargando comentarios...</p>
     </div>
@@ -63,7 +67,7 @@
     <p *ngIf="!isLoading && errorMessage" class="text-red-600 text-sm font-medium">{{ errorMessage }}</p>
 
     <ng-container *ngIf="!isLoading && !errorMessage">
-      <div *ngIf="comments.length > 0; else noComments" class="space-y-4">
+      <div *ngIf="comments.length > 0; else noComments" class="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-custom">
         <article
           *ngFor="let comment of comments; trackBy: trackByCommentId"
           class="flex"
@@ -113,7 +117,12 @@
               </div>
             </div>
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 text-white flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden">
+              <!-- Avatar con cursor pointer solo si no es propio -->
+              <div
+                class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 text-white flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden"
+                [ngClass]="{ 'cursor-pointer hover:opacity-80 transition-opacity': !isOwn(comment) && comment.slug }"
+                (click)="!isOwn(comment) ? navigateToProfile(comment, $event) : null"
+              >
                 <img
                   *ngIf="getAvatar(comment) as avatar"
                   [src]="avatar"
@@ -126,7 +135,14 @@
               <div class="flex-1 space-y-1">
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex flex-col">
-                    <p class="font-semibold text-gray-900">{{ getDisplayName(comment) }}</p>
+                    <!-- Nombre con cursor pointer solo si no es propio -->
+                    <p
+                      class="font-semibold text-gray-900"
+                      [ngClass]="{ 'cursor-pointer hover:text-blue-600 transition-colors': !isOwn(comment) && comment.slug }"
+                      (click)="!isOwn(comment) ? navigateToProfile(comment, $event) : null"
+                    >
+                      {{ getDisplayName(comment) }}
+                    </p>
                   </div>
                 </div>
 
@@ -168,24 +184,12 @@
       </div>
 
       <ng-template #noComments>
-        <div class="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center text-gray-600">
-          Aun no hay comentarios. Se el primero en opinar.
+        <div class="flex-1 flex items-center justify-center">
+          <div class="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center text-gray-600">
+            Aún no hay comentarios. Sé el primero en opinar.
+          </div>
         </div>
       </ng-template>
     </ng-container>
-  </div>
-
-  <div *ngIf="hasMore" class="pt-4 flex justify-center">
-    <button
-      type="button"
-      (click)="loadMore()"
-      [disabled]="isLoadingMore"
-      class="px-5 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-60 flex items-center gap-2"
-    >
-      <svg *ngIf="isLoadingMore" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4m0 8v4m8-8h-4M8 12H4m11.314-6.314l-2.828 2.828m-4.972 4.972l-2.828 2.828m0-10.628l2.828 2.828m4.972 4.972l2.828 2.828" />
-      </svg>
-      {{ isLoadingMore ? 'Cargando...' : 'Cargar mas' }}
-    </button>
   </div>
 </section>

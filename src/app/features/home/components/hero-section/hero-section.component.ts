@@ -1,9 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { trigger, style, transition, animate } from '@angular/animations';
 import { MatIcon } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 
+/**
+ * Componente de sección principal (hero) de la página de inicio.
+ * Muestra un carrusel de banners con efecto de apilamiento y animación.
+ * Gestiona navegación principal basada en estado de autenticación.
+ */
 @Component({
   selector: 'app-hero-section',
   standalone: true,
@@ -12,7 +18,7 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./hero-section.component.scss'],
   animations: [
     /**
-     * Animación de entrada con efecto de desvanecimiento y escala.
+     * Animación de entrada con desvanecimiento y escala.
      */
     trigger('fadeInScale', [
       transition(':enter', [
@@ -24,7 +30,7 @@ import { CommonModule } from '@angular/common';
 })
 export class HeroSectionComponent implements OnInit, OnDestroy {
 
-  // === Lista de banners ===
+  /** Lista de banners a mostrar en el carrusel */
   banners = [
     { src: 'assets/images/banner1.jpg', alt: 'Banner 1' },
     { src: 'assets/images/banner2.jpg', alt: 'Banner 2' },
@@ -32,40 +38,61 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
     { src: 'assets/images/banner4.jpg', alt: 'Banner 4' }
   ];
 
-  // Orden actual de apilamiento
+  /** Orden actual de apilamiento de banners */
   currentOrder = [0, 1, 2, 3];
+
+  /** ID del intervalo de rotación de banners */
   private intervalId: any;
 
+  constructor(
+    private router: Router,
+    public authState: AuthStateService
+  ) {}
+
+  /**
+   * Inicializa la rotación automática de banners.
+   */
   ngOnInit(): void {
-    // Rota los banners cada 4 segundos
     this.intervalId = setInterval(() => {
       this.currentOrder.push(this.currentOrder.shift()!);
     }, 4000);
   }
 
+  /**
+   * Detiene la rotación de banners al destruir el componente.
+   */
   ngOnDestroy(): void {
     clearInterval(this.intervalId);
   }
 
   /**
-   * Devuelve los estilos de posición, escala y opacidad
-   * para lograr efecto de apilado + desvanecimiento suave.
+   * Maneja la acción del botón principal según si el usuario está autenticado.
+   * Redirige a perfil o login.
+   */
+  handleMainAction(): void {
+    if (this.authState.isAuthenticated()) {
+      this.router.navigate(['/perfil/info']);
+    } else {
+      this.router.navigate(['/login']);
+    }
+  }
+
+  /**
+   * Devuelve los estilos dinámicos de un banner para lograr efecto de apilamiento.
+   * Incluye posición, escala, opacidad y transición suave.
+   * @param index Índice del banner en la lista
+   * @returns Objeto de estilos CSS aplicable al banner
    */
   getBannerStyle(index: number): any {
     const order = this.currentOrder.indexOf(index);
-
-    // Número total de banners visibles
     const total = this.banners.length;
 
-    // Si por algún motivo no encuentra el índice, lo mandamos al fondo
     if (order === -1) return { opacity: 0, position: 'absolute' };
 
-    // 🔧 Ajustes proporcionales
-    const offsetStep = 20;   // separación vertical/horizontal entre banners
+    const offsetStep = 20;   // separación vertical/horizontal entre capas
     const scaleStep = 0.03;  // diferencia de tamaño entre capas
     const opacityStep = 0.2; // diferencia de opacidad entre capas
 
-    // Cálculo dinámico según el orden
     const depth = total - 1 - order;
 
     return {

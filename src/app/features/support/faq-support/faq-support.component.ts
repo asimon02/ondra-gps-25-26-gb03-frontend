@@ -1,25 +1,44 @@
 import { Component } from '@angular/core';
-import { Location, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
-interface FAQ {
+/**
+ * Interfaz que representa una pregunta frecuente (FAQ)
+ */
+export interface FAQ {
+  /** Pregunta del FAQ */
   pregunta: string;
+  /** Respuesta del FAQ */
   respuesta: string;
+  /** Categoría a la que pertenece la pregunta */
   categoria: string;
+  /** Indica si el FAQ está expandido o colapsado */
   abierta?: boolean;
 }
 
+/**
+ * Componente para mostrar la sección de preguntas frecuentes (FAQ)
+ * con filtrado por categoría y búsqueda en tiempo real
+ *
+ * @example
+ * <app-faq-support></app-faq-support>
+ */
 @Component({
   selector: 'app-faq-support',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonComponent],
   templateUrl: './faq-support.component.html',
   styleUrls: ['./faq-support.component.scss'],
 })
 export class FaqSupportComponent {
+  /** Texto de búsqueda para filtrar preguntas */
   searchText: string = '';
+
+  /** Categoría seleccionada para filtrar las preguntas */
   categoriaSeleccionada: string = 'Todas';
 
+  /** Lista de categorías disponibles en el FAQ */
   categorias: string[] = [
     'Todas',
     'General',
@@ -34,6 +53,7 @@ export class FaqSupportComponent {
     'Compatibilidad'
   ];
 
+  /** Lista completa de preguntas frecuentes */
   faqs: FAQ[] = [
     {
       pregunta: '¿Qué es Ondra?',
@@ -177,24 +197,35 @@ export class FaqSupportComponent {
     }
   ];
 
-  constructor(private location: Location) {}
-
-  volverAtras() {
-    this.location.back();
-  }
-
-  seleccionarCategoria(categoria: string) {
+  /**
+   * Cambia la categoría seleccionada para filtrar preguntas
+   * @param categoria Nueva categoría seleccionada
+   */
+  seleccionarCategoria(categoria: string): void {
     this.categoriaSeleccionada = categoria;
   }
 
-  toggleFAQ(faq: FAQ) {
+  /**
+   * Alterna el estado de apertura de un FAQ (expandido / colapsado)
+   * @param faq FAQ que se desea alternar
+   */
+  toggleFAQ(faq: FAQ): void {
     faq.abierta = !faq.abierta;
   }
 
+  /**
+   * Obtiene la lista de preguntas filtradas según la categoría
+   * seleccionada y el texto de búsqueda
+   * @returns Array de FAQs filtradas
+   */
   get faqsFiltradas(): FAQ[] {
     return this.faqs.filter(faq => {
-      const coincideCategoria = this.categoriaSeleccionada === 'Todas' || faq.categoria === this.categoriaSeleccionada;
-      const coincideBusqueda = this.searchText === '' ||
+      const coincideCategoria =
+        this.categoriaSeleccionada === 'Todas' ||
+        faq.categoria === this.categoriaSeleccionada;
+
+      const coincideBusqueda =
+        this.searchText === '' ||
         faq.pregunta.toLowerCase().includes(this.searchText.toLowerCase()) ||
         faq.respuesta.toLowerCase().includes(this.searchText.toLowerCase());
 

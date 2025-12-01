@@ -1,4 +1,4 @@
-﻿<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <!-- Content Type Switcher (Tabs) -->
@@ -32,6 +32,19 @@
           </svg>
           Álbumes
         </button>
+        <button
+          (click)="switchContentType('artists')"
+          [class.bg-blue-600]="currentContentType === 'artists'"
+          [class.text-white]="currentContentType === 'artists'"
+          [class.text-gray-700]="currentContentType !== 'artists'"
+          [class.hover:bg-gray-100]="currentContentType !== 'artists'"
+          class="px-6 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Artistas
+        </button>
       </div>
     </div>
 
@@ -51,51 +64,63 @@
             type="text"
             [(ngModel)]="filters.searchTerm"
             (ngModelChange)="onFilterChange()"
-            [placeholder]="currentContentType === 'songs' ? 'Buscar canciones, artistas...' : 'Buscar álbumes, artistas...'"
+            [placeholder]="currentContentType === 'songs' ? 'Buscar canciones ...' : currentContentType === 'albums' ? 'Buscar álbumes ...' : 'Buscar artistas ...'"
             class="block w-full pr-3 filter-control search-control"
           />
         </div>
       </div>
 
-      <!-- Price Range - Compact -->
-      <div class="flex items-center gap-1.5">
+      <!-- Price Range (only for songs and albums) -->
+      <div *ngIf="currentContentType !== 'artists'" class="flex items-center gap-2">
         <label class="filter-label whitespace-nowrap">Precio:</label>
 
-        <input
-          type="number"
-          [(ngModel)]="filters.priceRange.min"
-          (ngModelChange)="onFilterChange()"
-          min="0"
-          [max]="filters.priceRange.max"
-          step="0.5"
-          class="w-16 text-center text-sm filter-control
-                     [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        />
+        <div class="flex items-center gap-1">
+          <input
+            type="number"
+            [(ngModel)]="filters.priceRange.min"
+            (ngModelChange)="onFilterChange()"
+            [min]="0"
+            [max]="filters.priceRange.max || 100"
+            step="0.50"
+            placeholder="0.00"
+            class="w-20 text-center text-sm filter-control
+                   [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <span class="text-xs text-gray-500">€</span>
+        </div>
 
-        <span class="text-gray-400">-</span>
+        <span class="text-gray-400">—</span>
 
-        <input
-          type="number"
-          [(ngModel)]="filters.priceRange.max"
-          (ngModelChange)="onFilterChange()"
-          min="0"
-          [max]="currentContentType === 'songs' ? 20 : 50"
-          step="0.5"
-          class="w-16 text-center text-sm filter-control
-                     [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        />
-
-        <span class="text-sm text-gray-700">€</span>
+        <div class="flex items-center gap-1">
+          <input
+            type="number"
+            [(ngModel)]="filters.priceRange.max"
+            (ngModelChange)="onFilterChange()"
+            [min]="filters.priceRange.min || 0"
+            [max]="100"
+            step="0.50"
+            placeholder="100.00"
+            class="w-20 text-center text-sm filter-control
+                   [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <span class="text-xs text-gray-500">€</span>
+        </div>
       </div>
 
-      <!-- Genre -->
+      <!-- Genre / Trending -->
       <select
         [(ngModel)]="filters.genre"
         (ngModelChange)="onFilterChange()"
         class="filter-control cursor-pointer"
       >
-        <option value="">Todos los géneros</option>
-        <option *ngFor="let genre of availableGenres" [value]="genre">{{ genre }}</option>
+        <ng-container *ngIf="currentContentType !== 'artists'">
+          <option value="">Todos los géneros</option>
+          <option *ngFor="let genre of availableGenres" [value]="genre">{{ genre }}</option>
+        </ng-container>
+        <ng-container *ngIf="currentContentType === 'artists'">
+          <option value="">Todos los artistas</option>
+          <option value="trending">En Tendencia</option>
+        </ng-container>
       </select>
 
       <!-- Sort -->
@@ -104,96 +129,97 @@
         (ngModelChange)="onFilterChange()"
         class="filter-control cursor-pointer"
       >
-        <option value="most_recent">Más recientes</option>
-        <option value="oldest">Más antiguos</option>
-        <option *ngIf="currentContentType === 'songs'" value="most_played">Más reproducidos</option>
-        <option value="best_rated">Mejor valorados</option>
-        <option value="price_asc">Precio: menor a mayor</option>
-        <option value="price_desc">Precio: mayor a menor</option>
+        <option *ngFor="let option of visibleSortOptions" [value]="option.value">
+          {{ option.label }}
+        </option>
       </select>
 
     </div>
 
-    <!-- Results count & pagination info -->
-    <div class="text-sm text-neutral mb-6 flex items-center justify-between">
-      <div>
-        <ng-container *ngIf="currentContentType === 'songs'">
-          Mostrando {{ displayedSongs.length }} de {{ totalSongs }} canciones
-        </ng-container>
-        <ng-container *ngIf="currentContentType === 'albums'">
-          Mostrando {{ displayedAlbums.length }} de {{ totalAlbums }} álbumes
-        </ng-container>
-      </div>
+    <!-- Results count -->
+    <div class="text-sm text-neutral mb-6">
+      <ng-container *ngIf="currentContentType === 'songs'">
+        Mostrando {{ displayedSongs.length }} de {{ totalSongs }} canciones
+      </ng-container>
+      <ng-container *ngIf="currentContentType === 'albums'">
+        Mostrando {{ displayedAlbums.length }} de {{ totalAlbums }} álbumes
+      </ng-container>
+      <ng-container *ngIf="currentContentType === 'artists'">
+        Mostrando {{ displayedArtists.length }} de {{ totalArtists }} artistas
+      </ng-container>
+    </div>
 
-      <!-- Pagination controls -->
-      <div *ngIf="totalPages > 1" class="flex items-center gap-2">
-        <button
-          (click)="previousPage()"
-          [disabled]="currentPage === 1"
-          [class.opacity-50]="currentPage === 1"
-          [class.cursor-not-allowed]="currentPage === 1"
-          class="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:hover:bg-white"
-        >
-          Anterior
-        </button>
-        <span class="text-sm text-gray-600">
-          Página {{ currentPage }} de {{ totalPages }}
-        </span>
-        <button
-          (click)="nextPage()"
-          [disabled]="currentPage === totalPages"
-          [class.opacity-50]="currentPage === totalPages"
-          [class.cursor-not-allowed]="currentPage === totalPages"
-          class="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:hover:bg-white"
-        >
-          Siguiente
-        </button>
+    <!-- Loading inicial -->
+    <div *ngIf="isLoading && !isLoadingMore" class="flex justify-center items-center py-20">
+      <div class="text-center">
+        <div class="loading-spinner mx-auto mb-4"></div>
+        <p class="text-gray-600">Cargando {{ currentContentType === 'songs' ? 'canciones' : currentContentType === 'albums' ? 'álbumes' : 'artistas' }}...</p>
       </div>
     </div>
 
-    <!-- Loading spinner -->
-    <div *ngIf="isLoading" class="flex items-center justify-center py-20">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    </div>
-
-    <!-- Songs Grid -->
+    <!-- Songs Grid con animación -->
     <div *ngIf="!isLoading && currentContentType === 'songs' && displayedSongs.length > 0"
          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
       <app-song-card
-        *ngFor="let song of displayedSongs"
+        *ngFor="let song of displayedSongs; let i = index"
         [song]="song"
         [isCurrentSong]="song.id === currentSongId"
         [isPlaying]="isSongPlaying"
+        [canFavorite]="canShowFavoriteActions"
+        [class.fade-in-item]="i >= displayedSongs.length - itemsPerPage"
         (toggleFavorite)="onToggleFavoriteSong($event)"
         (playSong)="onPlaySong($event)"
         (pauseSong)="onPauseSong()"
+        (addToCart)="onAddSongToCart($event)"
       ></app-song-card>
     </div>
 
-    <!-- Albums Grid -->
+    <!-- Albums Grid con animación -->
     <div *ngIf="!isLoading && currentContentType === 'albums' && displayedAlbums.length > 0"
          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
       <app-album-card
-        *ngFor="let album of displayedAlbums"
+        *ngFor="let album of displayedAlbums; let i = index"
         [album]="album"
         [isCurrentAlbum]="isAlbumCurrentlySelected(album)"
         [isPlaying]="isSongPlaying"
+        [canFavorite]="canShowFavoriteActions"
+        [class.fade-in-item]="i >= displayedAlbums.length - itemsPerPage"
         (toggleFavorite)="onToggleFavoriteAlbum($event)"
         (playAlbum)="onPlayAlbum($event)"
+        (addToCart)="onAddAlbumToCart($event)"
       ></app-album-card>
+    </div>
+
+    <!-- Artists Grid con animación -->
+    <div *ngIf="!isLoading && currentContentType === 'artists' && displayedArtists.length > 0"
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+      <app-artist-card
+        *ngFor="let artist of displayedArtists; let i = index"
+        [artist]="artist"
+        [class.fade-in-item]="i >= displayedArtists.length - itemsPerPage"
+      ></app-artist-card>
+    </div>
+
+    <!-- Loading more spinner (scroll infinito con texto) -->
+    <div *ngIf="isLoadingMore" class="flex flex-col items-center justify-center py-12">
+      <div class="loading-spinner mb-4"></div>
+      <p class="text-gray-600 text-sm animate-pulse">
+        Cargando más {{ currentContentType === 'songs' ? 'canciones' : currentContentType === 'albums' ? 'álbumes' : 'artistas' }}...
+      </p>
     </div>
 
     <!-- No results -->
     <div *ngIf="!isLoading &&
                     ((currentContentType === 'songs' && displayedSongs.length === 0) ||
-                     (currentContentType === 'albums' && displayedAlbums.length === 0))"
+                     (currentContentType === 'albums' && displayedAlbums.length === 0) ||
+                     (currentContentType === 'artists' && displayedArtists.length === 0))"
          class="text-center py-20">
       <svg class="mx-auto h-24 w-24 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <h3 class="text-xl font-semibold text-gray-900 mb-2">
-        No se encontraron {{ currentContentType === 'songs' ? 'canciones' : 'álbumes' }}
+        No se encontraron {{ currentContentType === 'songs' ? 'canciones' : currentContentType === 'albums' ? 'álbumes' : 'artistas' }}
       </h3>
       <p class="text-neutral">Intenta ajustar tus filtros de búsqueda</p>
     </div>
@@ -207,4 +233,3 @@
 
   </div>
 </div>
-

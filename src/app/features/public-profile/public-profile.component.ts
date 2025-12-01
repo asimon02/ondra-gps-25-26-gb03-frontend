@@ -1,7 +1,5 @@
-// src/app/features/public-profile/public-profile.component.ts
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PublicProfileService } from '../user-profile/services/public-profile.service';
@@ -16,7 +14,13 @@ import { FollowersModalComponent } from '../user-profile/components/followers-mo
 import { FavoritesPreviewComponent } from '../user-profile/components/favorites-preview/favorites-preview.component';
 import { CancionesPreviewComponent } from '../user-profile/components/canciones-preview/canciones-preview.component';
 import { AlbumesPreviewComponent } from '../user-profile/components/albumes-preview/albumes-preview.component';
+import { BackButtonComponent } from '../../shared/components/back-button/back-button.component';
+import { PublicSocialNetworksComponent } from './components/public-social-networks/public-social-networks.component';
 
+/**
+ * Componente principal de perfil público.
+ * Muestra información del usuario/artista, estadísticas y redes sociales.
+ */
 @Component({
   selector: 'app-public-profile',
   standalone: true,
@@ -24,24 +28,43 @@ import { AlbumesPreviewComponent } from '../user-profile/components/albumes-prev
     CommonModule,
     ProfileHeaderComponent,
     FollowersModalComponent,
-    FavoritesPreviewComponent,
     CancionesPreviewComponent,
-    AlbumesPreviewComponent
+    AlbumesPreviewComponent,
+    BackButtonComponent,
+    PublicSocialNetworksComponent
   ],
   templateUrl: './public-profile.component.html',
   styleUrls: ['./public-profile.component.scss']
 })
 export class PublicProfileComponent implements OnInit, OnDestroy {
+  /** Perfil público cargado */
   userProfile: UsuarioPublico | null = null;
+
+  /** Estadísticas de seguimiento del usuario */
   estadisticas: EstadisticasSeguimiento | null = null;
+
+  /** Indicador de carga */
   isLoading = true;
+
+  /** Modal activo (followers, etc.) */
   modalType: ModalType = null;
+
+  /** Indica si el perfil pertenece al usuario actual */
   isOwnProfile = false;
+
+  /** Indica si el usuario actual sigue este perfil */
   isFollowing = false;
+
+  /** Flag para evitar múltiples peticiones de follow/unfollow simultáneas */
   isProcessingFollow = false;
+
+  /** Indica si el perfil corresponde a un artista */
   isArtistProfile = false;
+
+  /** Total de reproducciones del artista (si aplica) */
   totalReproducciones: number | null = null;
 
+  /** Suscripción a los parámetros de ruta */
   private routeSubscription?: Subscription;
 
   constructor(
@@ -50,28 +73,22 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     public publicProfileService: PublicProfileService,
     public seguimientoService: UserSeguimientoService,
     public authStateService: AuthStateService,
-    private location: Location,
     private songService: SongService
   ) {}
 
+  /**
+   * Inicializa el componente y suscribirse a los cambios de ruta
+   */
   ngOnInit(): void {
-    // ✅ Scroll inicial
     window.scrollTo(0, 0);
 
     this.routeSubscription = this.route.params.subscribe(params => {
       const slug = params['slug'];
 
-      // ✅ Scroll al inicio cada vez que cambia el perfil
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Resetear estado
-      this.userProfile = null;
-      this.estadisticas = null;
-      this.isFollowing = false;
-      this.totalReproducciones = null;
-      this.isLoading = true;
+      this.resetState();
 
-      // Determinar si es perfil de artista
       this.isArtistProfile = this.route.snapshot.url[0]?.path === 'artista';
 
       if (slug) {
@@ -80,24 +97,30 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Limpia la suscripción al destruir el componente
+   */
   ngOnDestroy(): void {
     if (this.routeSubscription) {
       this.routeSubscription.unsubscribe();
     }
   }
 
+  /** Indica si el perfil pertenece a un artista */
   get isArtist(): boolean {
     return this.userProfile?.tipoUsuario === 'ARTISTA';
   }
 
+  /** Determina si se debe mostrar el botón de seguir */
   get showFollowButton(): boolean {
-    if (!this.authStateService.isAuthenticated()) {
-      return true;
-    }
     const currentUser = this.authStateService.getUserInfo();
-    return currentUser?.tipoUsuario !== 'ARTISTA';
+    return !!currentUser && currentUser.tipoUsuario !== 'ARTISTA';
   }
 
+  /**
+   * Carga el perfil público de un usuario o artista según el slug
+   * @param slug Slug del usuario/artista
+   */
   cargarPerfilPublico(slug: string): void {
     this.isLoading = true;
 
@@ -113,9 +136,7 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
         this.cargarEstadisticas(profile.idUsuario);
         this.verificarSiEsPropioYSeguimiento(profile.idUsuario);
 
-        const esArtista = profile.tipoUsuario === 'ARTISTA';
-
-        if (esArtista) {
+        if (profile.tipoUsuario === 'ARTISTA') {
           const artistaId = profile.idArtista || profile.idUsuario;
           console.log('✅ Cargando reproducciones para artista:', artistaId);
           this.cargarReproducciones(artistaId);
@@ -131,6 +152,10 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Carga las estadísticas de seguimiento de un usuario
+   * @param idUsuario ID del usuario
+   */
   cargarEstadisticas(idUsuario: number): void {
     this.seguimientoService.obtenerEstadisticas(idUsuario).subscribe({
       next: (stats) => {
@@ -143,7 +168,8 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ Carga las reproducciones totales del artista desde el endpoint real
+   * Carga las reproducciones totales del artista
+   * @param idArtista ID del artista
    */
   cargarReproducciones(idArtista: number): void {
     console.log(`🎵 Consultando estadísticas del artista ${idArtista}...`);
@@ -160,6 +186,10 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Verifica si el perfil pertenece al usuario actual y si ya lo sigue
+   * @param idUsuario ID del usuario a verificar
+   */
   verificarSiEsPropioYSeguimiento(idUsuario: number): void {
     const currentUser = this.authStateService.getUserInfo();
 
@@ -179,17 +209,16 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Alterna entre seguir y dejar de seguir un perfil
+   */
   toggleFollow(): void {
+    if (!this.showFollowButton) return;
+
     if (!this.authStateService.isAuthenticated()) {
       this.router.navigate(['/login'], {
         queryParams: { returnUrl: this.router.url }
       });
-      return;
-    }
-
-    const currentUser = this.authStateService.getUserInfo();
-    if (currentUser?.tipoUsuario === 'ARTISTA') {
-      alert('Los artistas no pueden seguir a otros usuarios');
       return;
     }
 
@@ -224,25 +253,34 @@ export class PublicProfileComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Recarga las estadísticas del perfil */
   recargarEstadisticas(): void {
     if (this.userProfile?.idUsuario) {
       this.cargarEstadisticas(this.userProfile.idUsuario);
     }
   }
 
+  /** Abre un modal específico */
   openModal(type: ModalType): void {
     this.modalType = type;
   }
 
+  /** Cierra cualquier modal abierto */
   closeModal(): void {
     this.modalType = null;
   }
 
-  goBack(): void {
-    this.location.back();
-  }
-
+  /** Navega al perfil propio del usuario */
   irAMiPerfil(): void {
     this.router.navigate(['/perfil/info']);
+  }
+
+  /** Resetea el estado interno del componente */
+  private resetState(): void {
+    this.userProfile = null;
+    this.estadisticas = null;
+    this.isFollowing = false;
+    this.totalReproducciones = null;
+    this.isLoading = true;
   }
 }

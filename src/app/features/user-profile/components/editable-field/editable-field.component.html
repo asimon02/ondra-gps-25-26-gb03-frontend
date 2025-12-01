@@ -1,5 +1,3 @@
-<!-- src/app/features/user-profile/components/editable-field/editable-field.component.html -->
-
 <div>
   <label class="block text-sm font-medium text-neutral mb-3 mt-2">{{ label }}</label>
 
@@ -37,7 +35,7 @@
       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
       [placeholder]="'Ingresa tu ' + label.toLowerCase()">
 
-    <!-- ✅ NUEVO: Textarea para biografía -->
+    <!-- Textarea para biografía -->
     <textarea
       *ngIf="isTextarea"
       [(ngModel)]="editedValue"
