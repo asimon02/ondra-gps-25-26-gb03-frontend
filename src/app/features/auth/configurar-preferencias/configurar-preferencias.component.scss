@@ -15,6 +15,9 @@
 
 .genero-chip {
   animation: fadeIn 0.3s ease-out;
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 // ============================================
@@ -37,16 +40,6 @@
 
 .generos-grid::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-}
-
-// ============================================
-// EFECTOS HOVER ADICIONALES
-// ============================================
-
-.genero-chip {
-  &:active {
-    transform: scale(0.98);
-  }
 }
 
 // ============================================
