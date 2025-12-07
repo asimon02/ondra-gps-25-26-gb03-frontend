@@ -1,0 +1,134 @@
+<div class="bg-white rounded-lg shadow-sm p-6 border border-blue-900 h-full">
+  <h2 class="text-xl font-bold text-gray-900 mb-6">Información Personal</h2>
+
+  <div class="space-y-4">
+
+    <!-- Campos editables del usuario con más separación -->
+    <div class="space-y-12">
+      <!-- Nombre -->
+      <app-editable-field
+        label="Nombre"
+        [value]="userProfile.nombreUsuario"
+        fieldName="nombreUsuario"
+        [userId]="userProfile.idUsuario"
+        (fieldUpdated)="onFieldUpdated($event)">
+      </app-editable-field>
+
+      <!-- Apellidos -->
+      <app-editable-field
+        label="Apellidos"
+        [value]="userProfile.apellidosUsuario"
+        fieldName="apellidosUsuario"
+        [userId]="userProfile.idUsuario"
+        (fieldUpdated)="onFieldUpdated($event)">
+      </app-editable-field>
+
+      <!-- Nombre artístico (solo para artistas) -->
+      <app-editable-field
+        *ngIf="isArtist"
+        label="Nombre Artístico"
+        [value]="userProfile.nombreArtistico || ''"
+        fieldName="nombreArtistico"
+        [userId]="userProfile.idUsuario"
+        [artistaId]="userProfile.idArtista"
+        (fieldUpdated)="onFieldUpdated($event)">
+      </app-editable-field>
+
+      <!-- Biografía (solo para artistas) -->
+      <app-editable-field
+        *ngIf="isArtist"
+        label="Biografía"
+        [value]="userProfile.biografiaArtistico || ''"
+        fieldName="biografiaArtistico"
+        [userId]="userProfile.idUsuario"
+        [artistaId]="userProfile.idArtista"
+        [isTextarea]="true"
+        (fieldUpdated)="onFieldUpdated($event)">
+      </app-editable-field>
+    </div>
+
+    <!-- Email (no editable) -->
+    <div>
+      <label class="block text-sm font-medium text-neutral mb-2">Email</label>
+      <div class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span class="text-gray-900">{{ userProfile.emailUsuario }}</span>
+        </div>
+
+        <!-- Badge de verificado -->
+        <span
+          *ngIf="userProfile.emailVerificado"
+          class="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          Verificado
+        </span>
+      </div>
+    </div>
+
+    <!-- Contraseña -->
+    <div>
+      <label class="block text-sm font-medium text-neutral mb-2">Contraseña</label>
+
+      <!-- Si NO tiene googleUid (tiene contraseña propia) -->
+      <div *ngIf="!userProfile.googleUid" class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          <span class="text-gray-900">••••••••••••</span>
+        </div>
+
+        <button
+          (click)="openPasswordModal()"
+          class="text-primary hover:text-blue-700 text-sm font-medium transition-colors">
+          Cambiar contraseña
+        </button>
+      </div>
+
+      <!-- Si tiene googleUid (cuenta de Google) -->
+      <div *ngIf="userProfile.googleUid" class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-neutral" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
+          </svg>
+          <span class="text-gray-900">Cuenta de Google</span>
+        </div>
+
+        <span class="text-xs text-neutral px-3 py-1 bg-gray-100 rounded-full">
+          Sin contraseña
+        </span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de cambio de contraseña -->
+<div
+  *ngIf="showPasswordModal"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+  (click)="closePasswordModal()">
+  <div
+    class="bg-white rounded-lg p-6 max-w-md w-full"
+    (click)="$event.stopPropagation()">
+    <h3 class="text-xl font-bold text-gray-900 mb-4">Cambiar Contraseña</h3>
+    <p class="text-neutral mb-4">Esta funcionalidad se implementará próximamente.</p>
+    <button
+      (click)="closePasswordModal()"
+      class="w-full bg-primary text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+      Cerrar
+    </button>
+  </div>
+</div>
+
+<app-change-password-modal
+  *ngIf="showPasswordModal"
+  [userId]="userProfile.idUsuario"
+  (closeModal)="closePasswordModal()"
+  (passwordChanged)="onPasswordChanged()">
+</app-change-password-modal>

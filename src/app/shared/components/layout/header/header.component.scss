@@ -1,0 +1,29 @@
+.nav-link {
+  position: relative;
+  padding-bottom: 4px;
+  color: #e0f2fe; // blue-100
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #93c5fd; // blue-300
+    border-radius: 1px;
+    transition: width 0.3s ease;
+  }
+
+  &:hover::after {
+    width: 100%;
+  }
+}
+
+.active-link {
+  color: #bfdbfe; // blue-200
+
+  &::after {
+    width: 100%;
+  }
+}

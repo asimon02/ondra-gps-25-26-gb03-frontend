@@ -1,0 +1,16 @@
+<div class="bg-blue-900 flex justify-center items-center text-white py-20">
+  @if (displayStats.length > 0) {
+    <div class="flex w-full max-w-screen-xl justify-center gap-24">
+      @for (stat of displayStats; track stat.label) {
+        <div class="flex flex-col items-center text-center">
+          <h2 class="stat-number mb-4">{{ stat.current | number }}+</h2>
+          <p class="stat-label">{{ stat.label }}</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="text-center">
+      <p class="text-xl">Cargando estadísticas...</p>
+    </div>
+  }
+</div>

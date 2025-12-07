@@ -1,0 +1,45 @@
+<!-- src/app/features/user-profile/components/user-card/user-card.component.html -->
+
+<div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
+
+  <!-- Info del usuario (CLICKEABLE) -->
+  <div
+    (click)="verPerfil()"
+    class="flex items-center gap-3 flex-1 cursor-pointer group">
+
+    <!-- Foto -->
+    <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+      <img
+        [src]="displayPhoto"
+        [alt]="displayName"
+        class="w-full h-full object-cover">
+    </div>
+
+    <!-- Nombre y subtítulo -->
+    <div class="flex-1 min-w-0">
+      <p class="font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
+        {{ displayName }}
+      </p>
+      <p class="text-sm text-neutral truncate">
+        {{ displaySubtitle }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Botón seguir/siguiendo (solo si showFollowButton es true) -->
+  <button
+    *ngIf="showFollowButton"
+    (click)="toggleFollow()"
+    [disabled]="isProcessing"
+    [class]="siguiendo
+      ? 'px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-300 text-gray-700 hover:border-red-500 hover:text-red-500 hover:bg-red-50 disabled:opacity-50'
+      : 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-blue-700 disabled:opacity-50'">
+    <span *ngIf="!isProcessing">
+      {{ siguiendo ? 'Siguiendo' : 'Seguir' }}
+    </span>
+    <span *ngIf="isProcessing" class="flex items-center justify-center">
+      <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+    </span>
+  </button>
+
+</div>

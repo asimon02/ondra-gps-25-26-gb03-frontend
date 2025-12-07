@@ -1,0 +1,312 @@
+<div class="min-h-screen bg-blue-50">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex items-center justify-center min-h-screen">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Song Not Found -->
+  <div *ngIf="!isLoading && !song" class="flex items-center justify-center min-h-screen">
+    <div class="text-center">
+      <svg class="mx-auto h-24 w-24 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Canción no encontrada</h2>
+      <p class="text-gray-600 mb-6">Lo sentimos, no pudimos encontrar esta canción.</p>
+      <app-back-button label="Volver atrás" variant="primary"></app-back-button>
+    </div>
+  </div>
+
+  <!-- Song Detail Content -->
+  <div *ngIf="!isLoading && song" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back Button -->
+    <app-back-button class="mb-6"></app-back-button>
+
+    <div
+      class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+      [ngClass]="{ 'lg:grid-rows-[auto_auto]': !canShowUserActions }"
+    >
+      <!-- Left Column: Cover and Actions -->
+      <div class="lg:col-span-1 flex flex-col gap-6">
+        <!-- Cover Image with Play Button -->
+        <div class="relative group">
+          <div class="bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 rounded-3xl overflow-hidden shadow-xl transform transition-all duration-300 hover:scale-[1.02]">
+            <img
+              [src]="song.coverUrl"
+              [alt]="song.title"
+              class="w-full aspect-square object-cover"
+            />
+          </div>
+
+          <!-- Play Overlay -->
+          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 rounded-3xl flex items-center justify-center">
+            <button
+              (click)="onToggleSongPlayback()"
+              class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-2xl shadow-blue-500/40 ring-4 ring-white/40 transform scale-0 group-hover:scale-100 transition-all duration-300 hover:scale-105"
+              [attr.aria-label]="isCurrentSongPlaying ? 'Pausar canción' : 'Reproducir canción'"
+              [attr.title]="isCurrentSongPlaying ? 'Pausar canción' : 'Reproducir canción'"
+            >
+              <ng-container *ngIf="isCurrentSongPlaying; else songDetailPlayIcon">
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+                </svg>
+              </ng-container>
+              <ng-template #songDetailPlayIcon>
+                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </ng-template>
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col gap-2.5">
+          <ng-container *ngIf="canShowUserActions">
+            <button
+              (click)="onPurchase()"
+              [disabled]="song.isPurchased"
+              class="w-full flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-semibold text-sm transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              [class.bg-blue-600]="!song.isPurchased"
+              [class.text-white]="!song.isPurchased"
+              [class.hover:bg-blue-700]="!song.isPurchased"
+              [class.bg-green-100]="song.isPurchased"
+              [class.text-green-700]="song.isPurchased"
+            >
+              <svg *ngIf="!song.isPurchased" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <svg *ngIf="song.isPurchased" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {{ song.isPurchased ? 'Ya comprada' : (song.price === 0 ? 'Obtener gratis' : ('Comprar ' + song.price.toFixed(2) + ' €')) }}
+            </button>
+
+            <button
+              (click)="onAddToCart()"
+              [disabled]="song.isPurchased"
+              class="w-full flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-semibold text-sm transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              [class.bg-purple-600]="!isInCart"
+              [class.text-white]="!isInCart"
+              [class.hover:bg-purple-700]="!isInCart"
+              [class.bg-red-600]="isInCart"
+              [class.text-white]="isInCart"
+              [class.hover:bg-red-700]="isInCart"
+            >
+              <svg *ngIf="!isInCart" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <svg *ngIf="isInCart" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              {{ isInCart ? 'Quitar del carrito' : 'Añadir al carrito' }}
+            </button>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <button
+                (click)="onToggleFavorite()"
+                class="w-full flex items-center justify-center bg-white px-5 py-4 rounded-xl font-semibold text-sm border-2 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                [class.border-red-500]="song.isFavorite"
+                [class.text-red-500]="song.isFavorite"
+                [class.border-gray-200]="!song.isFavorite"
+                [class.text-gray-700]="!song.isFavorite"
+                [class.hover:border-red-500]="!song.isFavorite"
+                [class.hover:text-red-500]="!song.isFavorite"
+                [attr.aria-label]="song.isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+                [attr.title]="song.isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+              >
+                <svg
+                  class="w-5 h-5"
+                  [class.fill-current]="song.isFavorite"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    [attr.fill]="song.isFavorite ? 'currentColor' : 'none'"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              </button>
+
+              <button
+                *ngIf="canShowUserActions"
+                (click)="onShare()"
+                class="w-full flex items-center justify-center bg-white text-gray-700 px-5 py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 hover:border-blue-600 hover:text-blue-600 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                aria-label="Compartir"
+                title="Compartir"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              </button>
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- Artist Info Card (for invitados/artistas) -->
+        <div *ngIf="!canShowUserActions" class="lg:row-start-2">
+          <ng-container [ngTemplateOutlet]="artistInfoCard"></ng-container>
+        </div>
+      </div>
+
+      <!-- Right Column: Info and Artist -->
+      <div class="lg:col-span-2 flex flex-col gap-6">
+        <!-- Song Info -->
+        <div class="bg-white rounded-3xl p-10 shadow-xl border border-blue-900">
+          <div class="flex items-start justify-between gap-4 mb-6">
+            <div class="flex-1">
+              <h1 class="text-4xl lg:text-5xl font-black text-gray-900 leading-tight mb-2">{{ song.title }}</h1>
+              <a
+                [routerLink]="['/artista', song.artist.slug || song.artist.id]"
+                class="text-lg font-medium text-gray-500 hover:text-blue-600 transition-colors"
+              >
+                {{ song.artist.artisticName }}
+              </a>
+            </div>
+            <span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-blue-700 bg-blue-50 rounded-full flex-shrink-0">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              {{ formatNumber(song.playCount) }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3 flex-wrap mb-6">
+            <span class="inline-flex items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-full">
+              {{ song.genre }}
+            </span>
+
+            <!-- Album Link -->
+            <a
+              *ngIf="getAlbumInfo() as album"
+              [routerLink]="['/album', album.id]"
+              class="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5 bg-gray-50 rounded-full"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span class="font-medium text-sm">{{ album.title }}</span>
+            </a>
+
+            <span class="flex items-center gap-2 text-gray-600">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ formatDuration(song.duration) }}
+            </span>
+            <span class="flex items-center gap-2 text-gray-600">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {{ song.releaseDate | date:'yyyy' }}
+            </span>
+          </div>
+
+          <div class="border-t-2 border-gray-100 pt-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-3">Sobre esta canción</h2>
+            <p class="text-gray-600 leading-relaxed text-base min-h-[53.5px]">
+              {{ song.description || 'No hay descripción disponible para esta canción.' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Artist Info Card -->
+        <ng-container *ngIf="canShowUserActions" [ngTemplateOutlet]="artistInfoCard"></ng-container>
+      </div>
+    </div>
+
+    <!-- Ratings and Comments Full Width Section Below -->
+    <div class="mt-8">
+      <div class="bg-white rounded-3xl p-8 shadow-xl border border-blue-900">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Valoraciones y Comentarios</h2>
+
+        <!-- Rating Widget -->
+        <div class="mb-8">
+          <rating-widget
+            [contentId]="+song.id"
+            type="song"
+          ></rating-widget>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="border-t-2 border-gray-100 pt-6">
+          <app-comments-section
+            [contentId]="+song.id"
+            type="song"
+            [contentTitle]="song.title"
+            (totalChanged)="onCommentsCountChange($event)"
+          ></app-comments-section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #artistInfoCard>
+    <ng-container *ngIf="song?.artist as artist">
+      <div class="bg-white rounded-3xl p-6 shadow-xl border border-blue-900">
+        <a
+          [routerLink]="['/artista', artist.slug || artist.id]"
+          class="flex items-center gap-4 group mb-4"
+        >
+          <div class="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:ring-2 group-hover:ring-blue-200 transition-all">
+            <img
+              *ngIf="artist.profileImage"
+              [src]="artist.profileImage"
+              [alt]="artist.artisticName"
+              class="w-full h-full object-cover"
+            />
+            <span *ngIf="!artist.profileImage" class="text-white text-xl font-bold">
+              {{ artist.artisticName.charAt(0) }}
+            </span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <span class="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate block">
+              {{ artist.artisticName }}
+            </span>
+            <p class="text-xs text-gray-500 font-medium">
+              <ng-container *ngIf="followersCount !== null; else followersFallback">
+                {{ formatNumber(followersCount || 0) }} seguidores
+              </ng-container>
+              <ng-template #followersFallback>Artista</ng-template>
+            </p>
+          </div>
+        </a>
+        <button
+          *ngIf="canShowFollow"
+          (click)="onToggleFollow()"
+          [disabled]="isUpdatingFollow || !artist.userId"
+          class="w-full px-5 py-2.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border-2"
+          [class.bg-blue-600]="!isFollowingArtist"
+          [class.text-white]="!isFollowingArtist"
+          [class.hover:bg-blue-700]="!isFollowingArtist"
+          [class.border-blue-600]="!isFollowingArtist"
+          [class.border-gray-300]="isFollowingArtist"
+          [class.bg-white]="isFollowingArtist"
+          [class.text-gray-700]="isFollowingArtist"
+          [class.hover:border-red-500]="isFollowingArtist"
+          [class.hover:text-red-500]="isFollowingArtist"
+          [class.hover:bg-red-50]="isFollowingArtist"
+        >
+          <svg *ngIf="!isUpdatingFollow && !isFollowingArtist" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          <svg *ngIf="!isUpdatingFollow && isFollowingArtist" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <div *ngIf="isUpdatingFollow" class="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+          <span>{{ isFollowingArtist ? 'Siguiendo' : 'Seguir' }}</span>
+        </button>
+      </div>
+    </ng-container>
+  </ng-template>
+
+  <!-- Music Player Global (fixed bottom) -->
+  <app-music-player
+    [isVisible]="showPlayer"
+    (close)="onClosePlayer()"
+    (toggleFavorite)="onPlayerToggleFavorite($event)"
+  ></app-music-player>
+</div>

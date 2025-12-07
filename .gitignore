@@ -3,6 +3,8 @@
 /tmp
 /out-tsc
 /bazel-out
+/.angular/cache
+.sass-cache/
 
 # Node
 node_modules/
@@ -10,17 +12,19 @@ npm-debug.log
 yarn-error.log
 package-lock.json
 
-# IDEs
+# IDEs and editors
 .idea/
 .vscode/
 *.iml
 *.iws
 *.ipr
+*.launch
 *.sublime-workspace
-
-# System
-.DS_Store
-Thumbs.db
+.project
+.classpath
+.c9/
+.settings/
+.history/
 
 # Environment
 .env
@@ -29,13 +33,31 @@ environment.*.ts
 !environment.ts
 !environment.prod.ts
 
+# Testing
+/coverage
+/.nyc_output
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings
+
 # Logs
 *.log
 logs/
 
-# Testing
-/coverage
-/.nyc_output
+# System files
+.DS_Store
+Thumbs.db
 
-# Angular cache
-.angular/
+# Documentación generada
+/docs
+/documentation
+/dist-docs
+
+# JSDoc/Compodoc
+.compodoc
+
+# TypeDoc
+/typedoc-out
+
+*.jsdoc.cache

@@ -1,0 +1,34 @@
+<nav class="w-full p-2 bg-blue-900 border-b border-blue-800 text-white flex justify-center sticky top-0 z-40 shadow-md">
+  <div class="w-full max-w-screen-2xl flex justify-between items-center px-4 lg:px-6">
+    <div class="w-fit gap-12 flex items-center">
+      <div class="pt-2 pb-2 pr-4 pl-4">
+        <a routerLink="/">
+          <img class="w-[180px] object-contain drop-shadow" src="/assets/logos/logo_txt_blanco.png" alt="OndraSounds logo">
+        </a>
+      </div>
+      <div class="w-fit flex gap-8 text-[16px] font-semibold text-white ml-8">
+        <a class="nav-link hover:text-blue-200 cursor-pointer transition-colors duration-200" routerLink="/" routerLinkActive="active-link" [routerLinkActiveOptions]="routerLinkOptions">
+          Inicio
+        </a>
+        <a class="nav-link hover:text-blue-200 cursor-pointer transition-colors duration-200" routerLink="/explorar" routerLinkActive="active-link">
+          Explorar
+        </a>
+        <a *ngIf="isAuthenticated" class="nav-link hover:text-blue-200 cursor-pointer transition-colors duration-200" routerLink="/para-ti" routerLinkActive="active-link">
+          Para ti
+        </a>
+      </div>
+    </div>
+    <div class="w-fit flex items-center gap-4">
+      <a *ngIf="canShowCart" routerLink="/carrito" class="relative p-2.5 rounded-full hover:bg-[#23C4A7] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#1FB79B] transition-colors duration-200" aria-label="Ir al carrito">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l1.5 10h11L19 7H5.2"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20.5a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0zM17 20.5a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0z"></path>
+        </svg>
+        <span *ngIf="cantidadItems > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+          {{ cantidadItems > 9 ? '9+' : cantidadItems }}
+        </span>
+      </a>
+      <app-profile-button></app-profile-button>
+    </div>
+  </div>
+</nav>

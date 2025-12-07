@@ -1,0 +1,123 @@
+<!-- Modal Container -->
+<div 
+  *ngIf="isOpen" 
+  class="modal-overlay"
+  (click)="onBackdropClick()"
+>
+  <div class="modal-content" (click)="onContentClick($event)">
+    
+    <!-- Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">
+        {{ esPrimeraVez ? '¡Bienvenido! Selecciona tus géneros favoritos' : 'Editar preferencias musicales' }}
+      </h2>
+      <p class="modal-subtitle">
+        {{ esPrimeraVez 
+          ? 'Para empezar, selecciona al menos ' + minSelecciones + ' géneros que te gusten'
+          : 'Modifica tus géneros preferidos para obtener mejores recomendaciones'
+        }}
+      </p>
+      
+      <!-- Botón cerrar (solo si no es primera vez) -->
+      <button 
+        *ngIf="!esPrimeraVez" 
+        class="close-button"
+        (click)="cerrarModal(false)"
+        aria-label="Cerrar modal"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contador y acciones rápidas -->
+    <div class="actions-bar">
+      <div class="selection-counter">
+        <span class="counter-badge" [class.active]="cantidadSeleccionada >= minSelecciones">
+          {{ cantidadSeleccionada }}
+        </span>
+        <span class="counter-text">
+          {{ cantidadSeleccionada === 1 ? 'género seleccionado' : 'géneros seleccionados' }}
+        </span>
+      </div>
+      
+      <div class="quick-actions">
+        <button 
+          type="button" 
+          class="btn-link"
+          (click)="seleccionarTodos()"
+        >
+          Seleccionar todos
+        </button>
+        <span class="separator">|</span>
+        <button 
+          type="button" 
+          class="btn-link"
+          (click)="deseleccionarTodos()"
+        >
+          Limpiar selección
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid de géneros -->
+    <div class="genres-grid" [class.loading]="isLoading">
+      <button
+        *ngFor="let genero of generos"
+        type="button"
+        class="genre-chip"
+        [class.selected]="genero.seleccionado"
+        (click)="toggleGenero(genero)"
+        [disabled]="isLoading"
+      >
+        <span class="genre-icon">🎵</span>
+        <span class="genre-name">{{ genero.nombre }}</span>
+        <span *ngIf="genero.seleccionado" class="check-icon">✓</span>
+      </button>
+    </div>
+
+    <!-- Mensajes de error/éxito -->
+    <div class="messages">
+      <div *ngIf="errorMessage" class="alert alert-error">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {{ errorMessage }}
+      </div>
+
+      <div *ngIf="successMessage" class="alert alert-success">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {{ successMessage }}
+      </div>
+    </div>
+
+    <!-- Footer con botones -->
+    <div class="modal-footer">
+      <button
+        *ngIf="!esPrimeraVez"
+        type="button"
+        class="btn btn-secondary"
+        (click)="cerrarModal(false)"
+        [disabled]="isLoading"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="guardarPreferencias()"
+        [disabled]="!puedeGuardar || isLoading"
+      >
+        <span *ngIf="isLoading" class="spinner"></span>
+        <span *ngIf="!isLoading">
+          {{ esPrimeraVez ? 'Continuar' : 'Guardar cambios' }}
+        </span>
+      </button>
+    </div>
+
+  </div>
+</div>

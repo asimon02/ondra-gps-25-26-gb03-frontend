@@ -1,0 +1,10 @@
+// src/app/features/public-profile/components/public-social-networks/public-social-networks.component.scss
+
+/* Estilos específicos de la sección pública de redes sociales */
+.social-link {
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.social-link:hover {
+  transform: translateY(-1px);
+}

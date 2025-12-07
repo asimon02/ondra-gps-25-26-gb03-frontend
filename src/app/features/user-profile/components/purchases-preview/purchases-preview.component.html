@@ -1,0 +1,15 @@
+<div *ngIf="!isLoading">
+  <app-content-carousel
+    [items]="compras"
+    title="Mis Compras"
+    icon="purchase"
+    [showAddButton]="false"
+    [showPlayButton]="false"
+    emptyMessage="Aún no has realizado ninguna compra"
+    (itemClick)="onItemClick($event)">
+  </app-content-carousel>
+</div>
+
+<div *ngIf="isLoading" class="flex justify-center py-8">
+  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+</div>

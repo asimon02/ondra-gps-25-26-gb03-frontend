@@ -1,0 +1,45 @@
+<footer class="bg-blue-900 text-white flex flex-col items-center px-12 py-6">
+  <div class="w-full max-w-screen-xl flex justify-between items-center gap-12">
+    <!-- Enlaces -->
+    <div class="flex flex-col gap-4 text-base flex-1">
+      <a routerLink="/terminos-servicio" class="hover:underline cursor-pointer">Términos del servicio</a>
+      <a routerLink="/politica-privacidad" class="hover:underline cursor-pointer">Política de privacidad</a>
+      <a routerLink="/soporte" class="hover:underline cursor-pointer">Soporte</a>
+    </div>
+
+    <!-- Logo -->
+    <div class="flex justify-center items-center flex-shrink-0">
+      <img class="w-40" src="assets/logos/logo.png" alt="OndraSounds logo">
+    </div>
+
+    <!-- Información de contacto -->
+    <div class="flex flex-col gap-4 text-base flex-1 items-end">
+      <div class="flex items-center gap-2">
+        <mat-icon>phone</mat-icon>
+        <span>927 25 71 95</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <mat-icon>mail</mat-icon>
+        <a href="mailto:ondrasounds@gmail.com" class="hover:underline cursor-pointer">
+          ondrasounds&#64;gmail.com
+        </a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <mat-icon>location_on</mat-icon>
+        <a href="https://www.google.com/maps?q=Av.+de+la+Universidad,+S/N,+10003+Cáceres"
+           target="_blank"
+           rel="noopener"
+           class="hover:underline cursor-pointer">
+          Av. de la Universidad, S/N, 10003 Cáceres
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Línea divisoria -->
+  <div class="border-t border-blue-600 w-full mt-10 pt-6 text-center text-base flex justify-center items-center gap-2 text-blue-200">
+    Desarrollado por el grupo GB03 de GPS y GC03 de ASEE <mat-icon>copyright</mat-icon> {{ currentYear || '2025' }} OndraSounds. Todos los derechos reservados.
+  </div>
+</footer>

@@ -1,0 +1,92 @@
+<!-- src/app/features/public-profile/public-profile.component.html -->
+
+<div class="min-h-screen bg-blue-50">
+  <div class="container mx-auto px-4 pb-12 max-w-7xl">
+    <div class="pt-6">
+      <app-back-button class="mb-6"></app-back-button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center min-h-[400px]">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Profile Content -->
+    <div *ngIf="!isLoading && userProfile">
+
+      <!-- Banner: "Este es tu perfil" si es propio -->
+      <div *ngIf="isOwnProfile" class="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <p class="text-blue-900 font-semibold">Estas viendo tu perfil publico</p>
+        </div>
+        <button
+          (click)="irAMiPerfil()"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm">
+          Editar mi perfil
+        </button>
+      </div>
+
+      <!-- Profile Header (ancho completo) -->
+      <div class="mb-6">
+        <app-profile-header
+          class="block w-full"
+          [userProfile]="userProfile"
+          [estadisticas]="estadisticas"
+          [isOwnProfile]="false"
+          [isPublicView]="true"
+          [isFollowing]="isFollowing"
+          [isProcessingFollow]="isProcessingFollow"
+          [showFollowButton]="showFollowButton"
+          [totalReproducciones]="totalReproducciones"
+          (openModalEvent)="openModal($event)"
+          (followClick)="toggleFollow()">
+        </app-profile-header>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- CONTENIDO PARA ARTISTA (Canciones y Albumes) -->
+      <!-- ============================================ -->
+      <ng-container *ngIf="isArtist && userProfile.idArtista as artistaId">
+        <div class="space-y-6">
+          <!-- Redes Sociales -->
+          <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+            <app-public-social-networks
+              [artistaId]="artistaId">
+            </app-public-social-networks>
+          </div>
+
+          <!-- Canciones -->
+          <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+            <app-canciones-preview
+              [artistaId]="artistaId"
+              [isOwnProfile]="false">
+            </app-canciones-preview>
+          </div>
+
+          <!-- Albumes -->
+          <div class="bg-white rounded-lg shadow-sm border border-blue-900 p-6">
+            <app-albumes-preview
+              [artistaId]="artistaId"
+              [isOwnProfile]="false">
+            </app-albumes-preview>
+          </div>
+        </div>
+      </ng-container>
+
+    </div> <!-- Cierre del container -->
+  </div>
+
+  <!-- Modal de Seguidos/Seguidores -->
+  <app-followers-modal
+    *ngIf="modalType && userProfile"
+    [modalType]="modalType"
+    [userId]="userProfile.idUsuario"
+    (closeModal)="closeModal()"
+    (statsUpdated)="recargarEstadisticas()">
+  </app-followers-modal>
+</div>

@@ -1,0 +1,172 @@
+<div class="content-grid-container">
+
+  <!-- Estado vacío -->
+  <div class="empty-state" *ngIf="itemsMostrados.length === 0">
+    <div class="empty-icon">🔍</div>
+    <h3>No hay recomendaciones disponibles</h3>
+    <p>Intenta cambiar los filtros o editar tus preferencias musicales</p>
+  </div>
+
+  <!-- Grid de items -->
+  <div class="grid-wrapper" *ngIf="itemsMostrados.length > 0">
+    
+    <!-- Header con contador -->
+    <div class="grid-header">
+      <h2 class="grid-title">
+        {{ categoriaActual === 'todas' ? 'Todas las recomendaciones' :
+           categoriaActual === 'canciones' ? 'Canciones recomendadas' :
+           'Álbumes recomendados' }}
+      </h2>
+      <span class="total-items">
+        {{ itemsMostrados.length }} {{ itemsMostrados.length === 1 ? 'resultado' : 'resultados' }}
+      </span>
+    </div>
+
+    <!-- Grid de cards -->
+    <div class="items-grid">
+      <div 
+        *ngFor="let item of itemsPaginados; let i = index"
+        class="item-card"
+        [style.animation-delay]="(i * 0.05) + 's'"
+      >
+        <!-- Badge de tipo -->
+        <div class="item-type-badge" [attr.data-type]="item.tipo">
+          <span class="badge-emoji">{{ getEmojiTipo(item.tipo) }}</span>
+          <span class="badge-text">{{ item.tipo === 'cancion' ? 'Canción' : 'Álbum' }}</span>
+        </div>
+
+        <!-- Imagen de portada -->
+        <div class="item-cover">
+          <div 
+            class="cover-placeholder" 
+            [style.background-color]="getColorGenero(item.idGenero)"
+          >
+            <span class="placeholder-icon">{{ getEmojiTipo(item.tipo) }}</span>
+          </div>
+          
+          <!-- Overlay con botones de acción -->
+          <div class="cover-overlay">
+            <button 
+              class="btn-play"
+              [routerLink]="getRutaDetalle(item)"
+              title="Ver detalles"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Información del item -->
+        <div class="item-info">
+          <h3 class="item-title" [title]="item.titulo">
+            {{ item.titulo }}
+          </h3>
+          
+          <div class="item-meta">
+            <span class="item-genre" [style.color]="getColorGenero(item.idGenero)">
+              {{ item.genero }}
+            </span>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="item-actions">
+            <button 
+              class="btn-action btn-details"
+              [routerLink]="getRutaDetalle(item)"
+              title="Ver detalles"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Detalles
+            </button>
+
+            <button 
+              class="btn-action btn-favorite"
+              title="Añadir a favoritos"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="totalPaginas > 1">
+      
+      <!-- Botón anterior -->
+      <button 
+        class="pagination-btn"
+        [disabled]="!tienePaginaAnterior"
+        (click)="paginaAnterior()"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Anterior
+      </button>
+
+      <!-- Números de página -->
+      <div class="pagination-numbers">
+        <!-- Primera página si no está visible -->
+        <button 
+          *ngIf="numerosPagina[0] > 1"
+          class="pagination-number"
+          (click)="irAPagina(1)"
+        >
+          1
+        </button>
+        
+        <!-- Puntos suspensivos si hay gap -->
+        <span *ngIf="numerosPagina[0] > 2" class="pagination-dots">...</span>
+
+        <!-- Números de página visibles -->
+        <button 
+          *ngFor="let num of numerosPagina"
+          class="pagination-number"
+          [class.active]="num === paginaActual"
+          (click)="irAPagina(num)"
+        >
+          {{ num }}
+        </button>
+
+        <!-- Puntos suspensivos si hay gap -->
+        <span *ngIf="numerosPagina[numerosPagina.length - 1] < totalPaginas - 1" class="pagination-dots">...</span>
+
+        <!-- Última página si no está visible -->
+        <button 
+          *ngIf="numerosPagina[numerosPagina.length - 1] < totalPaginas"
+          class="pagination-number"
+          (click)="irAPagina(totalPaginas)"
+        >
+          {{ totalPaginas }}
+        </button>
+      </div>
+
+      <!-- Botón siguiente -->
+      <button 
+        class="pagination-btn"
+        [disabled]="!tienePaginaSiguiente"
+        (click)="paginaSiguiente()"
+      >
+        Siguiente
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Info de página actual -->
+    <div class="pagination-info" *ngIf="totalPaginas > 1">
+      Página {{ paginaActual }} de {{ totalPaginas }} 
+      (Mostrando {{ itemsPaginados.length }} de {{ itemsMostrados.length }})
+    </div>
+
+  </div>
+
+</div>

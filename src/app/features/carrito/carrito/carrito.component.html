@@ -1,0 +1,156 @@
+<div class="min-h-screen bg-blue-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header con botón Volver -->
+    <div class="mb-6">
+      <app-back-button class="mb-6"></app-back-button>
+    </div>
+
+    <!-- Título -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Mi Carrito</h1>
+      <p class="text-gray-600 mt-2">
+        {{ carrito?.cantidadItems || 0 }} {{ (carrito?.cantidadItems || 0) === 1 ? 'producto' : 'productos' }}
+      </p>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <p class="text-red-800">{{ error }}</p>
+    </div>
+
+    <!-- Carrito vacío -->
+    <div *ngIf="!isLoading && carrito && carrito.items.length === 0" class="text-center py-12">
+      <svg class="w-24 h-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4h2l1.5 10h11L19 7H5.2M9 20.5a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0zM17 20.5a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0z"></path>
+      </svg>
+      <h2 class="text-2xl font-semibold text-gray-700 mb-2">Tu carrito está vacío</h2>
+      <p class="text-gray-500 mb-6">Explora nuestra música y añade tus favoritos</p>
+      <button
+        (click)="continuarComprando()"
+        class="bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+      >
+        Explorar música
+      </button>
+    </div>
+
+    <!-- Contenido del carrito -->
+    <div *ngIf="!isLoading && carrito && carrito.items.length > 0" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Lista de items -->
+      <div class="lg:col-span-2 space-y-4">
+        <div
+          *ngFor="let item of carrito.items"
+          class="bg-white rounded-lg shadow-md p-4 flex gap-4 hover:shadow-lg transition-shadow duration-200"
+        >
+          <!-- Imagen del producto - CLICKEABLE -->
+          <div
+            (click)="navegarADetalle(item)"
+            class="flex-shrink-0 w-24 h-24 rounded-md overflow-hidden cursor-pointer group"
+          >
+            <img
+              [src]="getItemImage(item)"
+              [alt]="item.titulo"
+              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+            />
+          </div>
+
+          <!-- Información del producto -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between">
+              <div class="flex-1 min-w-0">
+                <!-- Título clickeable - navega a detalle -->
+                <h3
+                  (click)="navegarADetalle(item)"
+                  class="font-semibold text-lg text-gray-900 truncate cursor-pointer hover:text-primary transition-colors duration-200"
+                >
+                  {{ item.titulo }}
+                </h3>
+
+                <!-- Nombre artista clickeable - navega a perfil artista -->
+                <p
+                  (click)="navegarAPerfilArtista(item, $event)"
+                  class="text-sm text-gray-600 truncate cursor-pointer hover:text-primary hover:underline transition-colors duration-200"
+                >
+                  {{ item.nombreArtistico }}
+                </p>
+
+                <span class="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-primary bg-blue-50 rounded-full">
+                  {{ getItemType(item) }}
+                </span>
+              </div>
+
+              <!-- Precio y botón eliminar -->
+              <div class="flex flex-col items-end gap-2 ml-4">
+                <p class="text-lg font-bold text-primary">{{ item.precio | number:'1.2-2' }} €</p>
+                <button
+                  (click)="eliminarItem(item.idCarritoItem)"
+                  class="text-red-500 hover:text-red-700 transition-colors duration-200"
+                  aria-label="Eliminar item"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón vaciar carrito -->
+        <div class="pt-4">
+          <button
+            (click)="vaciarCarrito()"
+            class="text-red-600 hover:text-red-800 font-medium transition-colors duration-200 flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            Vaciar carrito
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen del pedido -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Resumen del pedido</h2>
+
+          <div class="space-y-3 mb-6">
+            <div class="flex justify-between text-gray-600">
+              <span>Subtotal</span>
+              <span>{{ carrito.precioTotal | number:'1.2-2' }} €</span>
+            </div>
+            <div class="flex justify-between text-gray-600">
+              <span>Ítems</span>
+              <span>{{ carrito.cantidadItems }}</span>
+            </div>
+            <div class="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-900">
+              <span>Total</span>
+              <span>{{ carrito.precioTotal | number:'1.2-2' }} €</span>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="space-y-3">
+            <button
+              (click)="procederAlPago()"
+              class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              Proceder al pago
+            </button>
+            <button
+              (click)="continuarComprando()"
+              class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              Continuar comprando
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
