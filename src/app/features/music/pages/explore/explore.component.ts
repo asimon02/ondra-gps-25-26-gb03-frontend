@@ -596,7 +596,9 @@ export class ExploreComponent implements OnInit, OnDestroy {
         this.availableGenres = entries
           .map(g => (typeof g === 'string' ? g : g.nombre))
           .filter(Boolean)
-          .sort();
+          .sort((a: string, b: string) => {
+            return a.localeCompare(b); 
+          });
         this.genreNameToId = entries.reduce<Record<string, string>>((acc, genre) => {
           if (typeof genre === 'string') {
             return acc;
