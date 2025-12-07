@@ -69,7 +69,7 @@ export class AlbumService {
 
   constructor(
     private http: HttpClient,
-    private favoritosService: FavoritosService
+    private readonly favoritosService: FavoritosService
   ) {}
 
   // ===============================================================
