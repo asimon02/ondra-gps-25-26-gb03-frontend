@@ -129,7 +129,7 @@ export class AlbumService {
       const q = query.toLowerCase();
       const result = this.albums.filter(album =>
         album.title.toLowerCase().includes(q) ||
-        (album.description && album.description.toLowerCase().includes(q)) ||
+        (album.description?.toLowerCase().includes(q)) ||
         album.genre.toLowerCase().includes(q) ||
         album.artist.artisticName.toLowerCase().includes(q)
       );
